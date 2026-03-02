@@ -46,11 +46,7 @@ const dropdownItems = computed<DropdownMenuItem[][]>(() => [
     {
       label: "Copier le lien",
       icon: "i-lucide-link",
-      onSelect: async () => {
-        await qrRef.value?.copyToClipboard();
-        copySuccess.value = true;
-        setTimeout(() => { copySuccess.value = false; }, 2500);
-      },
+      onSelect: () => copyLink(),
     },
   ],
 ]);
@@ -65,6 +61,28 @@ async function downloadCardImage() {
     link.click();
   } catch (e) {
     console.error("Export carte PNG:", e);
+  }
+}
+
+async function copyLink() {
+  const linkToCopy = typeof window !== "undefined" ? window.location.href : url.value;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(linkToCopy);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = linkToCopy;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    copySuccess.value = true;
+    setTimeout(() => { copySuccess.value = false; }, 2500);
+  } catch (e) {
+    console.error("Copier le lien:", e);
   }
 }
 
