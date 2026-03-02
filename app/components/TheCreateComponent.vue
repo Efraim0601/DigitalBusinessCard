@@ -2,7 +2,10 @@
 import type { Card } from "~~/types/card";
 
 const appConfig = useAppConfig();
-const baseURL = ref("");
+const router = useRouter();
+
+// Origin disponible côté client dès le premier rendu (évite lien vide avant onMounted)
+const origin = ref(import.meta.client ? window.location.origin : "");
 
 const newCard = ref<Card>({
   color: appConfig.ui.colors.primary,
@@ -16,14 +19,29 @@ const newCard = ref<Card>({
   title: "",
 });
 
+/** Query pour la page "View" (navigation et URL du QR code) */
+const viewQuery = computed(() => {
+  const c = newCard.value;
+  const q: Record<string, string> = {
+    color: String(appConfig.ui.colors.primary),
+    type: "view",
+    fName: c.fName ?? "",
+    lName: c.lName ?? "",
+    email: (c.email ?? "").replace(/\s/g, ""),
+    phone: c.phone ?? "",
+    co: c.co ?? "",
+    title: c.title ?? "",
+  };
+  if (c.fax) q.fax = c.fax;
+  if (c.mobile) q.mobile = c.mobile;
+  return q;
+});
+
+/** URL complète pour le QR code et le partage (même que la cible du NuxtLink) */
 const url = computed(() => {
-  const faxStr = newCard.value.fax ? `&fax=${encodeURIComponent(newCard.value.fax)}` : "";
-  const mobileStr = newCard.value.mobile ? `&mobile=${encodeURIComponent(newCard.value.mobile)}` : "";
-  return `${baseURL.value}?color=${
-    appConfig.ui.colors.primary
-  }&type=view&fName=${formatFName()}&lName=${formatLName()}&email=${
-    newCard.value.email
-  }&phone=${formatPhone()}${faxStr}${mobileStr}&co=${formatCompany()}&title=${formatTitle()}`;
+  if (!origin.value) return "";
+  const resolved = router.resolve({ path: "/", query: viewQuery.value });
+  return origin.value + resolved.fullPath;
 });
 
 const formatEmail = () => {
@@ -61,12 +79,11 @@ watch(
   () => appConfig.ui.colors.primary,
   (newColor) => {
     newCard.value.color = newColor;
-    console.log("Color Changed!");
   }
 );
 
 onMounted(() => {
-  baseURL.value = window.location.href;
+  if (!origin.value) origin.value = window.location.origin;
 });
 </script>
 
@@ -111,7 +128,9 @@ onMounted(() => {
         <UInput v-model="newCard.mobile" type="tel" class="w-full" />
       </UFormField>
 
-      <a :href="`${url}`"> <UButton label="View Your Card" /></a>
+      <NuxtLink :to="{ path: '/', query: viewQuery }" class="inline-block">
+        <UButton label="View Your Card" />
+      </NuxtLink>
     </UForm>
   </div>
 </template>

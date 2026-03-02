@@ -26,6 +26,8 @@ const websiteUrl = computed(() => {
   return w.startsWith("http") ? w : `https://${w}`;
 });
 
+const router = useRouter();
+
 const dropdownItems = computed<DropdownMenuItem[][]>(() => [
   [
     {
@@ -47,6 +49,11 @@ const dropdownItems = computed<DropdownMenuItem[][]>(() => [
       label: "Copier le lien",
       icon: "i-lucide-link",
       onSelect: () => copyLink(),
+    },
+    {
+      label: "Créer une autre carte",
+      icon: "i-lucide-plus-circle",
+      onSelect: () => router.push("/"),
     },
   ],
 ]);
