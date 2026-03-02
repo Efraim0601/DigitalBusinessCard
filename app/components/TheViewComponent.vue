@@ -59,25 +59,12 @@ async function downloadCardImage() {
   if (!cardRef.value) return;
   try {
     const dataUrl = await toPng(cardRef.value, { cacheBust: true, backgroundColor: "#ffffff" });
-    const { jsPDF } = await import("jspdf");
-    // Format carte de visite standard (paysage) : 90 x 55 mm max
-    const maxWidthMm = 90;
-    const maxHeightMm = 55;
-    const el = cardRef.value;
-    const ratio = el.offsetWidth / el.offsetHeight;
-    const cardWidthMm = ratio >= maxWidthMm / maxHeightMm ? maxWidthMm : maxHeightMm * ratio;
-    const cardHeightMm = ratio >= maxWidthMm / maxHeightMm ? maxWidthMm / ratio : maxHeightMm;
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: [cardWidthMm, cardHeightMm],
-      hotfixes: ["px_scaling"],
-    });
-    doc.addImage(dataUrl, "PNG", 0, 0, cardWidthMm, cardHeightMm);
-    const fileName = `carte-${[urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "visite"}.pdf`;
-    doc.save(fileName);
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `carte-${[urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "visite"}.png`;
+    link.click();
   } catch (e) {
-    console.error("Export carte PDF:", e);
+    console.error("Export carte PNG:", e);
   }
 }
 
@@ -87,7 +74,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center w-full max-w-lg gap-4">
+  <div class="flex flex-col items-center w-full max-w-2xl gap-4">
     <!-- QR code au-dessus de la carte + menu dropdown -->
     <div class="flex flex-col items-center w-full gap-3">
       <div class="flex flex-col items-center justify-center w-full bg-white/80 rounded-xl p-4 border border-zinc-200/80">
@@ -143,8 +130,8 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Nom et titre -->
-        <div class="pb-4">
+        <!-- Nom et titre (espacement renforcé avant les coordonnées) -->
+        <div class="pb-8">
           <h1
             v-if="urlCard.fName || urlCard.lName"
             class="font-bold text-2xl text-black tracking-tight"
