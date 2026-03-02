@@ -1,6 +1,9 @@
 # Use the official Node.js image as the base image
 FROM node:22-alpine AS builder
 
+# Build deps for native modules (sharp/ipx)
+RUN apk add --no-cache python3 make g++
+
 # Set the working directory inside the container
 WORKDIR /app
 
@@ -16,13 +19,13 @@ COPY . .
 # Build the Nuxt application
 RUN npm run build
 
-# Use a smaller image for the final stage
+# Install server runtime deps (ipx, etc.) so COPY includes them
+RUN cd .output/server && npm install --omit=dev
+
+# Final stage
 FROM node:22-alpine AS runner
 
-# Set the working directory
 WORKDIR /app
-
-# Copy only the necessary files from the builder stage
 COPY --from=builder /app/.output /app/.output
 
 # Expose the port Nuxt runs on (default is 3000)

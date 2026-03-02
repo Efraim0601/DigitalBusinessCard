@@ -10,6 +10,8 @@ const newCard = ref<Card>({
   lName: "",
   email: "",
   phone: "",
+  fax: "",
+  mobile: "",
   co: "",
   avatar: "",
   title: "",
@@ -20,11 +22,13 @@ const url = computed(() => {
     newCard.value.avatar && newCard.value.avatar !== ""
       ? `&avatar=${newCard.value.avatar}`
       : "";
+  const faxStr = newCard.value.fax ? `&fax=${encodeURIComponent(newCard.value.fax)}` : "";
+  const mobileStr = newCard.value.mobile ? `&mobile=${encodeURIComponent(newCard.value.mobile)}` : "";
   return `${baseURL.value}?color=${
     appConfig.ui.colors.primary
   }&type=view&fName=${formatFName()}&lName=${formatLName()}${avatarStr}&email=${
     newCard.value.email
-  }&phone=${formatPhone()}&co=${formatCompany()}&title=${formatTitle()}`;
+  }&phone=${formatPhone()}${faxStr}${mobileStr}&co=${formatCompany()}&title=${formatTitle()}`;
 });
 
 const formatEmail = () => {
@@ -108,6 +112,12 @@ onMounted(() => {
           name="phone"
           class="w-full"
         />
+      </UFormField>
+      <UFormField label="Fax" name="fax" class="w-full">
+        <UInput v-model="newCard.fax" type="tel" class="w-full" />
+      </UFormField>
+      <UFormField label="Mobile" name="mobile" class="w-full">
+        <UInput v-model="newCard.mobile" type="tel" class="w-full" />
       </UFormField>
 
       <a :href="`${url}`"> <UButton label="View Your Card" /></a>

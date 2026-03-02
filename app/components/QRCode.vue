@@ -70,7 +70,6 @@ const downloadVCard = async () => {
 
   if (card.avatar) {
     avatar64 = await fetchImageBase64(card.avatar);
-    console.log(avatar64);
   }
   const vcard = new VCard();
 
@@ -80,6 +79,12 @@ const downloadVCard = async () => {
     .addJobtitle(card.title as string)
     .addEmail(card.email as string)
     .addPhoneNumber(card.phone, "WORK");
+  if (card.fax) {
+    vcard.addPhoneNumber(card.fax, "WORK;FAX");
+  }
+  if (card.mobile) {
+    vcard.addPhoneNumber(card.mobile, "CELL");
+  }
   if (avatar64) {
     vcard.addPhoto(avatar64);
   } else if (!avatar64 && card.avatar) {
@@ -97,6 +102,12 @@ const downloadVCard = async () => {
   document.body.removeChild(a);
   URL.revokeObjectURL(downloadUrl);
 };
+
+defineExpose({
+  downloadSVG,
+  copyToClipboard,
+  downloadVCard,
+});
 </script>
 
 <template>
@@ -104,37 +115,6 @@ const downloadVCard = async () => {
     class="flex flex-col items-center place-items-center justify-center w-full"
   >
     <Qrcode id="QRcode" :value="url" class="w-[90%] h-[90%]" variant="circle" />
-
-    <div class="flex flex-row justify-between p-1 w-[100%] items-center">
-      <UButton
-        icon="i-lucide-download"
-        variant="outline"
-        label="QR Code"
-        size="xs"
-        @click="downloadSVG"
-      />
-      <UButton
-        v-if="card"
-        icon="i-lucide-square-user-round"
-        variant="outline"
-        label="Contact (.vcf)"
-        size="xs"
-        @click="downloadVCard"
-      />
-      <UPopover>
-        <UButton
-          size="xs"
-          icon="i-lucide-link"
-          label="Copy Link"
-          variant="outline"
-          @click="copyToClipboard"
-        />
-
-        <template #content>
-          <p>Card link copied to clipboard!</p>
-        </template>
-      </UPopover>
-    </div>
   </div>
 </template>
 

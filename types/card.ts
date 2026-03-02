@@ -24,5 +24,7 @@ export interface Card {
   lName: string;
   email?: string;
   phone: string;
+  fax?: string;
+  mobile?: string;
   co?: string;
 }
