@@ -55,7 +55,6 @@ const downloadVCard = async () => {
   if (!card) {
     return;
   }
-
   const vcard = new VCard();
 
   vcard
@@ -71,31 +70,30 @@ const downloadVCard = async () => {
     vcard.addPhoneNumber(card.mobile, "CELL");
   }
 
-  const vcardStr = vcard.toString();
-  const blob = new Blob([vcardStr], { type: "text/vcard" });
+  const blob = new Blob([vcard.toString()], { type: "text/vcard" });
+  const vcardUrl = URL.createObjectURL(blob);
 
-  // Sur mobile : priorité au Web Share API pour ouvrir le formulaire contact (pas un téléchargement)
+  const tryAddToContacts = () => {
+    const a = document.createElement("a");
+    a.href = vcardUrl;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(vcardUrl), 500);
+  };
+
   if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
     const file = new File([blob], `${card.fName}_${card.lName}.vcf`, { type: "text/vcard" });
     if (navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: `${card.fName} ${card.lName}` });
-        return;
-      } catch (e) {
-        // Utilisateur a annulé ou partage non supporté : on passe au fallback
-      }
+      navigator
+        .share({ files: [file], title: `${card.fName} ${card.lName}` })
+        .then(() => URL.revokeObjectURL(vcardUrl))
+        .catch(() => tryAddToContacts());
+      return;
     }
   }
-
-  // Fallback : data URL pour que le navigateur propose "Ouvrir avec / Ajouter au contact" au lieu de télécharger
-  const dataUrl = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcardStr);
-  const a = document.createElement("a");
-  a.href = dataUrl;
-  a.rel = "noopener";
-  // Ne pas mettre d'attribut download : on veut ouvrir le flux contact, pas forcer le téléchargement
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  tryAddToContacts();
 };
 
 defineExpose({

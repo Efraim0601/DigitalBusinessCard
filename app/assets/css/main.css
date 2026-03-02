@@ -24,3 +24,9 @@
   background-position: right 0;
   background-size: 28px 48px;
 }
+
+/* Format carte de visite (≈ 90×55 mm, ratio 1.636). On garde une taille fixe et on scale sur mobile. */
+.business-card {
+  width: 900px;
+  height: 550px;
+}

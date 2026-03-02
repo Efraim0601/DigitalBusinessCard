@@ -18,7 +18,6 @@ export interface Card {
     | "pink"
     | "rose"
     | string;
-  avatar?: string;
   title?: string;
   fName: string;
   lName: string;
