@@ -7,6 +7,7 @@ const url = ref("waiting");
 const appConfig = useAppConfig();
 const qrRef = ref<{ downloadSVG: () => void; copyToClipboard: () => Promise<void>; downloadVCard: () => Promise<void> } | null>(null);
 const cardRef = ref<HTMLElement | null>(null);
+const cardContentRef = ref<HTMLElement | null>(null);
 const copySuccess = ref(false);
 
 const { urlCard } = defineProps<{
@@ -39,7 +40,7 @@ const dropdownItems = computed<DropdownMenuItem[][]>(() => [
       onSelect: downloadCardImage,
     },
     {
-      label: "Ajouter aux contacts (.vcf)",
+      label: "Ajouter aux contacts",
       icon: "i-lucide-square-user-round",
       onSelect: () => qrRef.value?.downloadVCard(),
     },
@@ -51,14 +52,53 @@ const dropdownItems = computed<DropdownMenuItem[][]>(() => [
   ],
 ]);
 
+function waitForImages(el: HTMLElement): Promise<void> {
+  const imgs = el.querySelectorAll("img");
+  if (imgs.length === 0) return Promise.resolve();
+  return Promise.all(
+    Array.from(imgs).map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) resolve();
+          else {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }
+        })
+    )
+  ).then(() => {});
+}
+
 async function downloadCardImage() {
-  if (!cardRef.value) return;
+  await nextTick();
+  const el = cardContentRef.value ?? cardRef.value;
+  if (!el) return;
   try {
-    const dataUrl = await toPng(cardRef.value, { cacheBust: true, backgroundColor: "#ffffff" });
+    await waitForImages(el);
+    const dataUrl = await toPng(el, {
+      cacheBust: true,
+      backgroundColor: "#f6f6f5",
+      pixelRatio: 2,
+      skipFonts: true,
+    });
+    const fileName = `carte-${[urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "visite"}.png`;
     const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = `carte-${[urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "visite"}.png`;
-    link.click();
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch {
+      link.href = dataUrl;
+      link.download = fileName;
+      link.click();
+    }
   } catch (e) {
     console.error("Export carte PNG:", e);
   }
@@ -92,7 +132,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center w-full max-w-2xl gap-4">
+  <div class="flex flex-col items-center w-full max-w-2xl gap-4 px-1 sm:px-0 touch-manipulation">
     <!-- QR code au-dessus de la carte + menu dropdown -->
     <div class="flex flex-col items-center w-full gap-3">
       <div class="flex flex-col items-center justify-center w-full bg-white/80 rounded-xl p-4 border border-zinc-200/80">
@@ -114,94 +154,113 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Carte de visite : fond blanc, visuel identique à la référence -->
-    <div
-      ref="cardRef"
-      class="relative w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg"
-    >
-      <!-- Motif watermark discret à droite (forme géométrique légère) -->
+    <!-- Carte de visite : apparence conforme à la référence (police, espacements, fond, watermark) -->
+    <div ref="cardRef" class="card-visite-bg w-full min-w-0 flex flex-col rounded-xl border border-zinc-200 shadow-md overflow-hidden font-sans" style="touch-action: manipulation;">
+      <!-- Partie capturée en image (sans les icônes en bas) -->
       <div
-        class="absolute right-0 top-0 bottom-0 w-28 bg-[linear-gradient(135deg,transparent_45%,rgba(0,0,0,0.03)_50%,transparent_55%)] bg-[length:20px_20px] pointer-events-none"
-        aria-hidden="true"
-      />
-
-      <div class="relative px-5 pt-5 pb-5">
-        <!-- En-tête : logo Afriland (taille visible sur toutes les cartes) -->
-        <div class="flex items-center gap-3 pb-3">
-          <NuxtImg
-            v-if="company?.logo"
-            :src="company.logo"
-            alt="Afriland First Bank"
-            width="220"
-            height="56"
-            class="h-14 w-auto min-h-[3.5rem] max-h-16 object-contain object-left"
-          />
-          <div v-else class="flex items-baseline flex-wrap gap-1">
-            <template v-if="company?.name">
-              <span class="text-xl font-bold text-black border-b-2 border-red-600">
-                {{ company.name.split(" ")[0] }}
-              </span>
-              <span class="text-xl font-bold text-black">
-                {{ company.name.split(" ").slice(1).join(" ") }}
-              </span>
-            </template>
+        ref="cardContentRef"
+        class="card-visite-bg relative overflow-hidden rounded-t-xl"
+      >
+        <div class="card-visite-watermark" aria-hidden="true" />
+        <div class="relative px-5 sm:px-8 pt-6 sm:pt-8 pb-6 sm:pb-8">
+          <!-- En-tête : logo Afriland + soulignement rouge -->
+          <div class="flex items-center gap-3 pb-8">
+            <img
+              v-if="company?.logo"
+              :src="company.logo"
+              alt="Afriland First Bank"
+              width="220"
+              height="56"
+              class="h-14 w-auto min-h-[3.5rem] max-h-16 object-contain object-left"
+            />
+            <div v-else class="flex items-baseline flex-wrap gap-1">
+              <template v-if="company?.name">
+                <span class="text-lg sm:text-xl font-bold text-[#1a1a1a] border-b-2 border-red-600">{{ company.name.split(" ")[0] }}</span>
+                <span class="text-lg sm:text-xl font-bold text-[#1a1a1a]">{{ company.name.split(" ").slice(1).join(" ") }}</span>
+              </template>
+            </div>
+          </div>
+          <!-- Nom (gros, gras) et titre (régulier, plus petit) avec espacement marqué -->
+          <div class="pb-10">
+            <h1 v-if="urlCard.fName || urlCard.lName" class="text-xl sm:text-2xl font-bold text-[#1a1a1a] tracking-tight leading-tight">
+              {{ [urlCard.fName, urlCard.lName].filter(Boolean).join(" ") }}
+            </h1>
+            <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-sm text-[#333] font-normal mt-1.5 leading-snug">
+              {{ urlCard.title }}
+            </p>
+          </div>
+          <!-- Coordonnées : deux colonnes, espacement généreux, libellés en gras -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 sm:gap-x-14 gap-y-3 text-[13px] sm:text-sm text-[#1a1a1a] leading-[1.5]">
+            <div class="flex flex-col gap-3 min-w-0">
+              <p v-if="company?.address" class="font-semibold break-words">{{ company.address }}</p>
+              <p v-if="company?.addressComplement" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">B.P:</span>
+                <span class="font-normal break-words">{{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}</span>
+              </p>
+              <p v-if="company?.telex" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">Telex:</span>
+                <span class="font-normal break-words">{{ company.telex }}</span>
+              </p>
+              <p v-if="urlCard.email && urlCard.email !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">E-mail:</span>
+                <a :href="`mailto:${urlCard.email}`" class="font-normal text-[#1a1a1a] hover:underline break-all">{{ urlCard.email }}</a>
+              </p>
+              <p v-if="company?.website" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">Site Web:</span>
+                <a :href="websiteUrl" target="_blank" rel="noopener noreferrer" class="font-normal text-[#1a1a1a] hover:underline break-all">{{ company.website }}</a>
+              </p>
+            </div>
+            <div class="flex flex-col gap-3 min-w-0">
+              <p v-if="urlCard.phone && urlCard.phone !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">Tél:</span>
+                <a :href="`tel:${urlCard.phone}`" class="font-normal text-[#1a1a1a] hover:underline whitespace-nowrap">{{ urlCard.phone }}</a>
+              </p>
+              <p v-if="urlCard.fax && urlCard.fax !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">Fax:</span>
+                <a :href="`tel:${urlCard.fax}`" class="font-normal text-[#1a1a1a] hover:underline whitespace-nowrap">{{ urlCard.fax }}</a>
+              </p>
+              <p v-if="urlCard.mobile && urlCard.mobile !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
+                <span class="font-semibold shrink-0 whitespace-nowrap">Mob:</span>
+                <a :href="`tel:${urlCard.mobile}`" class="font-normal text-[#1a1a1a] hover:underline whitespace-nowrap">{{ urlCard.mobile }}</a>
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Nom et titre (espacement renforcé avant les coordonnées) -->
-        <div class="pb-8">
-          <h1
-            v-if="urlCard.fName || urlCard.lName"
-            class="font-bold text-2xl text-black tracking-tight"
+      <!-- Boutons d'action : hors capture d'image -->
+      <div
+        v-if="(urlCard.phone || urlCard.mobile || urlCard.email) && (urlCard.phone !== '' || urlCard.mobile !== '' || urlCard.email !== '')"
+        class="mt-0 pt-4 pb-4 px-4 sm:px-5 border-t border-zinc-200/80 flex flex-wrap items-center justify-center gap-3 sm:gap-4 bg-zinc-50/50 rounded-b-xl"
+      >
+          <a
+            v-if="urlCard.phone && urlCard.phone !== ''"
+            :href="`tel:${urlCard.phone}`"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-(--ui-primary) hover:text-white text-zinc-700 text-sm font-medium transition-colors"
+            title="Appeler"
           >
-            {{ [urlCard.fName, urlCard.lName].filter(Boolean).join(" ") }}
-          </h1>
-          <p
-            v-if="urlCard.title && urlCard.title !== 'undefined'"
-            class="text-sm text-black/80 mt-1"
+            <UIcon name="i-lucide-phone" class="size-5" />
+            <span>Appeler</span>
+          </a>
+          <button
+            v-if="urlCard.mobile && urlCard.mobile !== ''"
+            type="button"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-(--ui-primary) hover:text-white text-zinc-700 text-sm font-medium transition-colors"
+            title="Ajouter aux contacts"
+            @click="qrRef?.downloadVCard()"
           >
-            {{ urlCard.title }}
-          </p>
-        </div>
-
-        <!-- Deux colonnes : design identique à la carte de visite (libellés en gras, valeurs en normal) -->
-        <div class="grid grid-cols-[1fr_1fr] gap-8 text-sm text-black/90 leading-snug">
-          <!-- Colonne gauche : adresse, B.P., Telex, E-mail, Site Web -->
-          <div class="flex flex-col gap-1.5">
-            <p v-if="company?.address" class="font-bold">
-              {{ company.address }}
-            </p>
-            <p v-if="company?.addressComplement">
-              <span class="font-bold">B.P:</span> {{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}
-            </p>
-            <p v-if="company?.telex">
-              <span class="font-bold">Telex:</span> {{ company.telex }}
-            </p>
-            <p v-if="urlCard.email && urlCard.email !== ''">
-              <span class="font-bold">E-mail:</span>
-              <a :href="`mailto:${urlCard.email}`" class="text-black/90 hover:underline">{{ urlCard.email }}</a>
-            </p>
-            <p v-if="company?.website">
-              <span class="font-bold">Site Web:</span>
-              <a :href="websiteUrl" target="_blank" rel="noopener noreferrer" class="text-black/90 hover:underline">{{ company.website }}</a>
-            </p>
-          </div>
-          <!-- Colonne droite : Tél, Fax, Mob -->
-          <div class="flex flex-col gap-1.5">
-            <p v-if="urlCard.phone && urlCard.phone !== ''">
-              <span class="font-bold">Tél:</span>
-              <a :href="`tel:${urlCard.phone}`" class="text-black/90 hover:underline">{{ urlCard.phone }}</a>
-            </p>
-            <p v-if="urlCard.fax && urlCard.fax !== ''">
-              <span class="font-bold">Fax:</span>
-              <a :href="`tel:${urlCard.fax}`" class="text-black/90 hover:underline">{{ urlCard.fax }}</a>
-            </p>
-            <p v-if="urlCard.mobile && urlCard.mobile !== ''">
-              <span class="font-bold">Mob:</span>
-              <a :href="`tel:${urlCard.mobile}`" class="text-black/90 hover:underline">{{ urlCard.mobile }}</a>
-            </p>
-          </div>
-        </div>
+            <UIcon name="i-lucide-smartphone" class="size-5" />
+            <span>Ajouter aux contacts</span>
+          </button>
+          <a
+            v-if="urlCard.email && urlCard.email !== ''"
+            :href="`mailto:${urlCard.email}`"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-(--ui-primary) hover:text-white text-zinc-700 text-sm font-medium transition-colors"
+            title="Envoyer un email"
+          >
+            <UIcon name="i-lucide-mail" class="size-5" />
+            <span>Envoyer un email</span>
+          </a>
       </div>
     </div>
   </div>

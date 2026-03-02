@@ -15,17 +15,60 @@ Cardyo is a lightweight Progressive Web App (PWA) that allows users to create an
 
 ## Installation
 
-This assumes you have docker installed and running already on your machine or server.
+### Option 1 : Build et lancer avec Docker (serveur Ubuntu ou autre)
 
-- Run the following command to pull the docker image:
+Prérequis : Docker installé sur le serveur (`sudo apt install docker.io` puis `sudo systemctl start docker`).
+
+**1. Sur votre machine, cloner le projet et aller dans le dossier :**
+```bash
+cd /chemin/vers/cardyo
+```
+
+**2. Construire l’image Docker :**
+```bash
+docker build -f dockerfile -t cardyo:latest .
+```
+(La construction peut prendre quelques minutes.)
+
+**3. Lancer le conteneur :**
+```bash
+docker run -d -p 8080:3000 --name cardyo cardyo:latest
+```
+- `-d` : exécution en arrière-plan  
+- `-p 8080:3000` : port de l’hôte **8080** → port du conteneur **3000** (modifier 8080 si besoin)  
+- `--name cardyo` : nom du conteneur
+
+**4. Accéder à l’application :**  
+Ouvrir dans un navigateur : `http://<IP-du-serveur>:8080`
+
+**Commandes utiles :**
+```bash
+# Voir les conteneurs en cours
+docker ps
+
+# Arrêter l’application
+docker stop cardyo
+
+# Redémarrer
+docker start cardyo
+
+# Voir les logs
+docker logs cardyo
+```
+
+### Option 2 : Utiliser une image déjà publiée
+
+Si une image est publiée (ex. sur ghcr.io) :
+
+- Télécharger l’image :
 ```
 docker pull ghcr.io/kyaustad/cardyo:latest
 ```
-- Run this command to run the docker container on your machine:
+- Lancer le conteneur :
 ```
-docker run -d -p 8080:3000 ghcr.io/kyaustad/cardyo:latest 
+docker run -d -p 8080:3000 ghcr.io/kyaustad/cardyo:latest
 ```
-The ``` -d ``` runs the container in detached mode ( in the background ) and change the ``` 8080 ``` to whatever port you want the container to run on. 3000 is the internal container port, do not change that.
+Le `-d` lance le conteneur en arrière-plan. Vous pouvez remplacer `8080` par le port hôte de votre choix. Le port **3000** à l’intérieur du conteneur ne doit pas être modifié.
 
 ### Unraid Installation
 

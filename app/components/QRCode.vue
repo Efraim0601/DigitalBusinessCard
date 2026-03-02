@@ -92,15 +92,29 @@ const downloadVCard = async () => {
   }
 
   const blob = new Blob([vcard.toString()], { type: "text/vcard" });
-  const downloadUrl = URL.createObjectURL(blob);
+  const vcardUrl = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = downloadUrl;
-  a.download = `${card.fName}_${card.lName}.vcf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(downloadUrl);
+  const tryAddToContacts = () => {
+    const a = document.createElement("a");
+    a.href = vcardUrl;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(vcardUrl), 500);
+  };
+
+  if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    const file = new File([blob], `${card.fName}_${card.lName}.vcf`, { type: "text/vcard" });
+    if (navigator.canShare({ files: [file] })) {
+      navigator
+        .share({ files: [file], title: `${card.fName} ${card.lName}` })
+        .then(() => URL.revokeObjectURL(vcardUrl))
+        .catch(() => tryAddToContacts());
+      return;
+    }
+  }
+  tryAddToContacts();
 };
 
 defineExpose({
