@@ -13,20 +13,15 @@ const newCard = ref<Card>({
   fax: "",
   mobile: "",
   co: "",
-  avatar: "",
   title: "",
 });
 
 const url = computed(() => {
-  const avatarStr =
-    newCard.value.avatar && newCard.value.avatar !== ""
-      ? `&avatar=${newCard.value.avatar}`
-      : "";
   const faxStr = newCard.value.fax ? `&fax=${encodeURIComponent(newCard.value.fax)}` : "";
   const mobileStr = newCard.value.mobile ? `&mobile=${encodeURIComponent(newCard.value.mobile)}` : "";
   return `${baseURL.value}?color=${
     appConfig.ui.colors.primary
-  }&type=view&fName=${formatFName()}&lName=${formatLName()}${avatarStr}&email=${
+  }&type=view&fName=${formatFName()}&lName=${formatLName()}&email=${
     newCard.value.email
   }&phone=${formatPhone()}${faxStr}${mobileStr}&co=${formatCompany()}&title=${formatTitle()}`;
 });
@@ -90,10 +85,6 @@ onMounted(() => {
       </UFormField>
       <UFormField label="Last Name" name="lName" class="w-full">
         <UInput v-model="newCard.lName" class="w-full" />
-      </UFormField>
-      <UFormField label="Avatar " name="avatar" class="w-full">
-        <p class="text-xs text-gray-400 pb-1">Link to an image</p>
-        <UInput v-model="newCard.avatar" class="w-full" />
       </UFormField>
       <UFormField label="Company" name="co" class="w-full">
         <UInput v-model="newCard.co" class="w-full" />

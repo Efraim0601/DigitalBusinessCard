@@ -5,20 +5,22 @@
   --font-sans: "Public Sans", sans-serif;
 }
 
-/* Carte de visite : fond et motif de référence Afriland */
+/* Carte de visite : fond et motif de référence Afriland (visible sur mobile et à l’export) */
 .card-visite-bg {
-  background-color: #f6f6f5;
+  background-color: #f2f2f0;
 }
+/* Design de fond : motif type sablier/chaîne à droite (référence carte physique) */
 .card-visite-watermark {
   position: absolute;
   right: 0;
   top: 0;
   bottom: 0;
-  width: 40%;
-  max-width: 180px;
+  width: 38%;
+  min-width: 120px;
+  max-width: 200px;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='20' height='36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h3v36H0V0zm6 6h3v24H6V6zm12 0h3v24h-3V6z' fill='%23000' fill-opacity='0.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cellipse cx='14' cy='8' rx='10' ry='4' fill='%238a8585' fill-opacity='0.18'/%3E%3Cpath d='M8 22h12M14 18v8' stroke='%237a7575' stroke-opacity='0.25' stroke-width='1' fill='none'/%3E%3Cellipse cx='14' cy='40' rx='10' ry='4' fill='%238a8585' fill-opacity='0.18'/%3E%3C/svg%3E");
   background-repeat: repeat-y;
   background-position: right 0;
-  opacity: 0.95;
+  background-size: 28px 48px;
 }

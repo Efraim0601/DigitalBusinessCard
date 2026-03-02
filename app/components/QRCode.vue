@@ -51,26 +51,11 @@ const copyToClipboard = async () => {
   copy(url);
 };
 
-async function fetchImageBase64(url: string): Promise<string | null> {
-  try {
-    const response = await $fetch(`/api/convertImage`, { params: { url } });
-    return response.base64;
-  } catch (error) {
-    console.error("Failed to convert image:", error);
-    return null;
-  }
-}
-
 const downloadVCard = async () => {
   if (!card) {
     return;
   }
 
-  let avatar64 = null;
-
-  if (card.avatar) {
-    avatar64 = await fetchImageBase64(card.avatar);
-  }
   const vcard = new VCard();
 
   vcard
@@ -85,36 +70,32 @@ const downloadVCard = async () => {
   if (card.mobile) {
     vcard.addPhoneNumber(card.mobile, "CELL");
   }
-  if (avatar64) {
-    vcard.addPhoto(avatar64);
-  } else if (!avatar64 && card.avatar) {
-    vcard.addPhotoURL(card.avatar);
-  }
 
-  const blob = new Blob([vcard.toString()], { type: "text/vcard" });
-  const vcardUrl = URL.createObjectURL(blob);
+  const vcardStr = vcard.toString();
+  const blob = new Blob([vcardStr], { type: "text/vcard" });
 
-  const tryAddToContacts = () => {
-    const a = document.createElement("a");
-    a.href = vcardUrl;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(vcardUrl), 500);
-  };
-
+  // Sur mobile : priorité au Web Share API pour ouvrir le formulaire contact (pas un téléchargement)
   if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
     const file = new File([blob], `${card.fName}_${card.lName}.vcf`, { type: "text/vcard" });
     if (navigator.canShare({ files: [file] })) {
-      navigator
-        .share({ files: [file], title: `${card.fName} ${card.lName}` })
-        .then(() => URL.revokeObjectURL(vcardUrl))
-        .catch(() => tryAddToContacts());
-      return;
+      try {
+        await navigator.share({ files: [file], title: `${card.fName} ${card.lName}` });
+        return;
+      } catch (e) {
+        // Utilisateur a annulé ou partage non supporté : on passe au fallback
+      }
     }
   }
-  tryAddToContacts();
+
+  // Fallback : data URL pour que le navigateur propose "Ouvrir avec / Ajouter au contact" au lieu de télécharger
+  const dataUrl = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcardStr);
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.rel = "noopener";
+  // Ne pas mettre d'attribut download : on veut ouvrir le flux contact, pas forcer le téléchargement
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 };
 
 defineExpose({

@@ -18,7 +18,6 @@ const company = computed(() => appConfig.company ?? {
   name: "Afriland First Bank",
   address: "Place de l'Indépendance",
   addressComplement: "B.P: 11834 Yaoundé - Cameroun",
-  telex: "8907 KN",
   website: "www.afrilandfirstbank.com",
 });
 
@@ -77,7 +76,7 @@ async function downloadCardImage() {
     await waitForImages(el);
     const dataUrl = await toPng(el, {
       cacheBust: true,
-      backgroundColor: "#f6f6f5",
+      backgroundColor: "#f2f2f0",
       pixelRatio: 2,
       skipFonts: true,
     });
@@ -154,24 +153,26 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Carte de visite : apparence conforme à la référence (police, espacements, fond, watermark) -->
-    <div ref="cardRef" class="card-visite-bg w-full min-w-0 flex flex-col rounded-xl border border-zinc-200 shadow-md overflow-hidden font-sans" style="touch-action: manipulation;">
+    <!-- Carte de visite : ratio 85×54 (carte de visite), toujours visible en entier sur mobile -->
+    <div class="w-full max-w-[min(100%,22rem)] aspect-[85/54] flex-shrink-0">
+      <div ref="cardRef" class="card-visite-bg w-full h-full min-h-0 flex flex-col rounded-xl border border-zinc-200 shadow-md overflow-hidden font-sans" style="touch-action: manipulation;">
       <!-- Partie capturée en image (sans les icônes en bas) -->
       <div
         ref="cardContentRef"
-        class="card-visite-bg relative overflow-hidden rounded-t-xl"
+        class="card-visite-bg relative overflow-hidden rounded-t-xl flex-1 min-h-0 flex flex-col"
+        style="background-color: #f2f2f0;"
       >
         <div class="card-visite-watermark" aria-hidden="true" />
-        <div class="relative px-5 sm:px-8 pt-6 sm:pt-8 pb-6 sm:pb-8">
+        <div class="relative px-5 sm:px-8 pt-6 sm:pt-8 pb-6 sm:pb-8 flex-1 min-h-0 overflow-hidden flex flex-col">
           <!-- En-tête : logo Afriland + soulignement rouge -->
           <div class="flex items-center gap-3 pb-8">
             <img
               v-if="company?.logo"
               :src="company.logo"
               alt="Afriland First Bank"
-              width="220"
-              height="56"
-              class="h-14 w-auto min-h-[3.5rem] max-h-16 object-contain object-left"
+              width="320"
+              height="100"
+              class="h-[6.25rem] w-auto min-h-[5rem] max-h-28 object-contain object-left"
             />
             <div v-else class="flex items-baseline flex-wrap gap-1">
               <template v-if="company?.name">
@@ -189,17 +190,13 @@ onMounted(() => {
               {{ urlCard.title }}
             </p>
           </div>
-          <!-- Coordonnées : deux colonnes, espacement généreux, libellés en gras -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 sm:gap-x-14 gap-y-3 text-[13px] sm:text-sm text-[#1a1a1a] leading-[1.5]">
+          <!-- Coordonnées : deux colonnes comme la référence (y compris sur mobile) -->
+          <div class="grid grid-cols-2 gap-x-4 sm:gap-x-10 gap-y-2.5 sm:gap-y-3 text-xs sm:text-sm text-[#1a1a1a] leading-[1.45]">
             <div class="flex flex-col gap-3 min-w-0">
               <p v-if="company?.address" class="font-semibold break-words">{{ company.address }}</p>
               <p v-if="company?.addressComplement" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
                 <span class="font-semibold shrink-0 whitespace-nowrap">B.P:</span>
                 <span class="font-normal break-words">{{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}</span>
-              </p>
-              <p v-if="company?.telex" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">Telex:</span>
-                <span class="font-normal break-words">{{ company.telex }}</span>
               </p>
               <p v-if="urlCard.email && urlCard.email !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
                 <span class="font-semibold shrink-0 whitespace-nowrap">E-mail:</span>
@@ -262,6 +259,7 @@ onMounted(() => {
             <span>Envoyer un email</span>
           </a>
       </div>
+    </div>
     </div>
   </div>
 </template>

@@ -5,7 +5,6 @@ declare module "nuxt/schema" {
       logo?: string;
       address?: string;
       addressComplement?: string;
-      telex?: string;
       website?: string;
     };
   }
