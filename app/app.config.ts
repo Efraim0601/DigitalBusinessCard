@@ -5,6 +5,7 @@ export default defineAppConfig({
     logo: "/Logo_Afriland-remove.png",
     address: "Place de l'Indépendance",
     addressComplement: "B.P: 11834 Yaoundé - Cameroun",
+    telex: "8907 KN",
     website: "www.afrilandfirstbank.com",
   },
   // https://ui3.nuxt.dev/getting-started/theme#design-system

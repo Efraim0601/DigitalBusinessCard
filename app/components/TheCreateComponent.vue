@@ -2,6 +2,7 @@
 import type { Card } from "~~/types/card";
 
 const appConfig = useAppConfig();
+const route = useRoute();
 const baseURL = ref("");
 
 const newCard = ref<Card>({
@@ -66,7 +67,25 @@ watch(
 );
 
 onMounted(() => {
-  baseURL.value = window.location.href;
+  baseURL.value = `${window.location.origin}${window.location.pathname}`;
+
+  const getQueryValue = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
+  const query = route.query;
+
+  newCard.value.fName = getQueryValue(query.fName);
+  newCard.value.lName = getQueryValue(query.lName);
+  newCard.value.co = getQueryValue(query.co);
+  newCard.value.title = getQueryValue(query.title);
+  newCard.value.email = getQueryValue(query.email);
+  newCard.value.phone = getQueryValue(query.phone);
+  newCard.value.fax = getQueryValue(query.fax);
+  newCard.value.mobile = getQueryValue(query.mobile);
+
+  const color = getQueryValue(query.color);
+  if (color) {
+    newCard.value.color = color;
+    appConfig.ui.colors.primary = color;
+  }
 });
 </script>
 

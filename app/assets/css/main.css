@@ -9,24 +9,54 @@
 .card-visite-bg {
   background-color: #f2f2f0;
 }
-/* Design de fond : motif type sablier/chaîne à droite (référence carte physique) */
-.card-visite-watermark {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 38%;
-  min-width: 120px;
-  max-width: 200px;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cellipse cx='14' cy='8' rx='10' ry='4' fill='%238a8585' fill-opacity='0.18'/%3E%3Cpath d='M8 22h12M14 18v8' stroke='%237a7575' stroke-opacity='0.25' stroke-width='1' fill='none'/%3E%3Cellipse cx='14' cy='40' rx='10' ry='4' fill='%238a8585' fill-opacity='0.18'/%3E%3C/svg%3E");
-  background-repeat: repeat-y;
-  background-position: right 0;
-  background-size: 28px 48px;
-}
 
 /* Format carte de visite (≈ 90×55 mm, ratio 1.636). On garde une taille fixe et on scale sur mobile. */
 .business-card {
-  width: 900px;
-  height: 550px;
+  width: 600px;
+  height: 340px;
+}
+
+/* Boutons d'action (icônes seules) */
+.card-cta-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(5, 150, 105, 0.24));
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.card-cta-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #ffffff, #f4fffb);
+  color: #065f46;
+  border: 1px solid rgba(52, 211, 153, 0.55);
+  box-shadow: 0 8px 16px rgba(4, 120, 87, 0.16);
+  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, filter 150ms ease;
+}
+.card-cta-icon:hover {
+  background: linear-gradient(180deg, #ffffff, #dcfce7);
+  border-color: rgba(16, 185, 129, 0.8);
+  color: #064e3b;
+  box-shadow: 0 12px 22px rgba(5, 150, 105, 0.24);
+  transform: translateY(-2px) scale(1.02);
+  filter: saturate(1.08);
+}
+.card-cta-icon:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 6px 12px rgba(5, 150, 105, 0.22);
+}
+.card-cta-icon:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.7);
+  outline-offset: 3px;
 }

@@ -8,8 +8,8 @@ const appConfig = useAppConfig();
 const qrRef = ref<{ downloadSVG: () => void; copyToClipboard: () => Promise<void>; downloadVCard: () => Promise<void> } | null>(null);
 const cardContentRef = ref<HTMLElement | null>(null);
 const copySuccess = ref(false);
-const CARD_WIDTH = 900;
-const CARD_HEIGHT = 550;
+const CARD_WIDTH = 600;
+const CARD_HEIGHT = 340;
 const cardScale = ref(1);
 const updateScale = () => {
   const availableWidth = typeof window !== "undefined" ? Math.max(280, window.innerWidth - 24) : CARD_WIDTH;
@@ -24,12 +24,28 @@ const company = computed(() => appConfig.company ?? {
   name: "Afriland First Bank",
   address: "Place de l'Indépendance",
   addressComplement: "B.P: 11834 Yaoundé - Cameroun",
+  telex: "8907 KN",
   website: "www.afrilandfirstbank.com",
 });
 
 const websiteUrl = computed(() => {
   const w = company.value?.website ?? "";
   return w.startsWith("http") ? w : `https://${w}`;
+});
+
+const editCardUrl = computed(() => {
+  const params = new URLSearchParams();
+  params.set("type", "create");
+  if (appConfig.ui.colors.primary) params.set("color", String(appConfig.ui.colors.primary));
+  if (urlCard.fName) params.set("fName", String(urlCard.fName));
+  if (urlCard.lName) params.set("lName", String(urlCard.lName));
+  if (urlCard.co) params.set("co", String(urlCard.co));
+  if (urlCard.title) params.set("title", String(urlCard.title));
+  if (urlCard.email) params.set("email", String(urlCard.email));
+  if (urlCard.phone) params.set("phone", String(urlCard.phone));
+  if (urlCard.fax) params.set("fax", String(urlCard.fax));
+  if (urlCard.mobile) params.set("mobile", String(urlCard.mobile));
+  return `/?${params.toString()}`;
 });
 
 const dropdownItems = computed<DropdownMenuItem[][]>(() => [
@@ -43,11 +59,6 @@ const dropdownItems = computed<DropdownMenuItem[][]>(() => [
       label: "Télécharger la carte de visite",
       icon: "i-lucide-id-card",
       onSelect: downloadCardImage,
-    },
-    {
-      label: "Ajouter aux contacts",
-      icon: "i-lucide-square-user-round",
-      onSelect: () => qrRef.value?.downloadVCard(),
     },
     {
       label: "Copier le lien",
@@ -84,7 +95,7 @@ async function downloadCardImage() {
     await waitForImages(el);
     const dataUrl = await toPng(el, {
       cacheBust: true,
-      backgroundColor: "#f2f2f0",
+      backgroundColor: "#ffffff",
       pixelRatio: 2,
       skipFonts: true,
     });
@@ -114,9 +125,14 @@ async function downloadCardImage() {
 }
 
 async function copyLink() {
-  const linkToCopy = typeof window !== "undefined" ? window.location.href : url.value;
+  const getCurrentPageUrl = () => {
+    if (typeof window !== "undefined") return window.location.href;
+    if (typeof document !== "undefined") return document.URL;
+    return url.value;
+  };
+  const linkToCopy = getCurrentPageUrl();
   try {
-    if (navigator.clipboard?.writeText) {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(linkToCopy);
     } else {
       const textarea = document.createElement("textarea");
@@ -131,6 +147,8 @@ async function copyLink() {
     copySuccess.value = true;
     setTimeout(() => { copySuccess.value = false; }, 2500);
   } catch (e) {
+    // Last fallback: open native prompt with current URL.
+    if (typeof window !== "undefined") window.prompt("Copiez ce lien :", linkToCopy);
     console.error("Copier le lien:", e);
   }
 }
@@ -186,20 +204,18 @@ onBeforeUnmount(() => {
         <!-- Partie capturée en image (sans les icônes en bas) -->
         <div
         ref="cardContentRef"
-        class="business-card card-visite-bg relative overflow-hidden rounded-xl border border-zinc-200 shadow-md"
-        style="background-color: #f2f2f0;"
+        class="business-card relative overflow-hidden border border-zinc-200 shadow-[0_4px_20px_rgba(0,0,0,0.15)] bg-white"
         >
-          <div class="card-visite-watermark" aria-hidden="true" />
-          <div class="relative px-8 pt-8 pb-8">
-          <!-- En-tête : logo Afriland + soulignement rouge -->
-          <div class="flex items-center gap-3 pb-8">
+          <div class="h-full flex flex-col px-8 pt-[18px] pb-5">
+          <!-- Logo -->
+          <div class="flex items-center mb-[14px]">
             <img
               v-if="company?.logo"
               :src="company.logo"
               alt="Afriland First Bank"
               width="320"
-              height="100"
-              class="h-[6.25rem] w-auto min-h-[5rem] max-h-28 object-contain object-left"
+              height="74"
+              class="w-[300px] h-[74px] object-cover object-left"
             />
             <div v-else class="flex items-baseline flex-wrap gap-1">
               <template v-if="company?.name">
@@ -208,45 +224,67 @@ onBeforeUnmount(() => {
               </template>
             </div>
           </div>
-          <!-- Nom (gros, gras) et titre (régulier, plus petit) avec espacement marqué -->
-          <div class="pb-10">
-            <h1 v-if="urlCard.fName || urlCard.lName" class="text-2xl font-bold text-[#1a1a1a] tracking-tight leading-tight">
+
+          <!-- Nom & titre -->
+          <div class="mb-[14px]">
+            <h1 v-if="urlCard.fName || urlCard.lName" class="text-[20px] font-bold text-[#1a1a2e] leading-tight font-[Arial,Helvetica,sans-serif]">
               {{ [urlCard.fName, urlCard.lName].filter(Boolean).join(" ") }}
             </h1>
-            <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-base text-[#333] font-normal mt-2 leading-snug">
+            <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-[12px] text-[#333] mt-[5px] leading-[1.35] font-[Arial,Helvetica,sans-serif]">
               {{ urlCard.title }}
             </p>
           </div>
-          <!-- Coordonnées : deux colonnes comme la référence (y compris sur mobile) -->
-          <div class="grid grid-cols-2 gap-x-10 gap-y-3 text-sm text-[#1a1a1a] leading-[1.45]">
-            <div class="flex flex-col gap-3 min-w-0">
-              <p v-if="company?.address" class="font-semibold break-words">{{ company.address }}</p>
-              <p v-if="company?.addressComplement" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">B.P:</span>
-                <span class="font-normal break-words">{{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}</span>
-              </p>
-              <p v-if="urlCard.email && urlCard.email !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">E-mail:</span>
-                <a :href="`mailto:${urlCard.email}`" class="font-normal text-[#1a1a1a] hover:underline break-all">{{ urlCard.email }}</a>
-              </p>
-              <p v-if="company?.website" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">Site Web:</span>
-                <a :href="websiteUrl" target="_blank" rel="noopener noreferrer" class="font-normal text-[#1a1a1a] hover:underline break-all">{{ company.website }}</a>
-              </p>
+
+          <!-- Contact -->
+          <div class="mt-auto flex justify-between items-end gap-4">
+            <div class="text-[11px] text-[#222] leading-[1.7] font-[Arial,Helvetica,sans-serif]">
+              <div v-if="company?.address" class="font-bold text-[11.5px]">{{ company.address }}</div>
+              <table class="border-collapse">
+                <tr v-if="company?.addressComplement">
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">B.P :</td>
+                  <td class="align-top text-[11px] leading-[1.55]">{{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}</td>
+                </tr>
+                <tr v-if="company?.telex">
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">Telex :</td>
+                  <td class="align-top text-[11px] leading-[1.55]">{{ company.telex }}</td>
+                </tr>
+                <tr v-if="urlCard.email && urlCard.email !== ''">
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">E-mail :</td>
+                  <td class="align-top text-[11px] leading-[1.55]">
+                    <a :href="`mailto:${urlCard.email}`" class="text-[#222] hover:underline break-all">{{ urlCard.email }}</a>
+                  </td>
+                </tr>
+                <tr v-if="company?.website">
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">Site Web :</td>
+                  <td class="align-top text-[11px] leading-[1.55]">
+                    <a :href="websiteUrl" target="_blank" rel="noopener noreferrer" class="text-[#222] hover:underline">
+                      {{ company.website }}
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </div>
-            <div class="flex flex-col gap-3 min-w-0">
-              <p v-if="urlCard.phone && urlCard.phone !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">Tél:</span>
-                <a :href="`tel:${urlCard.phone}`" class="font-normal text-[#1a1a1a] hover:underline whitespace-nowrap">{{ urlCard.phone }}</a>
-              </p>
-              <p v-if="urlCard.fax && urlCard.fax !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">Fax:</span>
-                <a :href="`tel:${urlCard.fax}`" class="font-normal text-[#1a1a1a] hover:underline whitespace-nowrap">{{ urlCard.fax }}</a>
-              </p>
-              <p v-if="urlCard.mobile && urlCard.mobile !== ''" class="flex flex-wrap items-baseline gap-x-1 min-w-0">
-                <span class="font-semibold shrink-0 whitespace-nowrap">Mob:</span>
-                <a :href="`tel:${urlCard.mobile}`" class="font-normal text-[#1a1a1a] hover:underline whitespace-nowrap">{{ urlCard.mobile }}</a>
-              </p>
+            <div class="text-[11px] text-[#222] text-right font-[Arial,Helvetica,sans-serif]">
+              <table class="border-collapse">
+                <tr v-if="urlCard.phone && urlCard.phone !== ''">
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">Tél :</td>
+                  <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
+                    <a :href="`tel:${urlCard.phone}`" class="text-[#222] hover:underline">{{ urlCard.phone }}</a>
+                  </td>
+                </tr>
+                <tr v-if="urlCard.fax && urlCard.fax !== ''">
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">Fax :</td>
+                  <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
+                    <a :href="`tel:${urlCard.fax}`" class="text-[#222] hover:underline">{{ urlCard.fax }}</a>
+                  </td>
+                </tr>
+                <tr v-if="urlCard.mobile && urlCard.mobile !== ''">
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">Mob :</td>
+                  <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
+                    <a :href="`tel:${urlCard.mobile}`" class="text-[#222] hover:underline">{{ urlCard.mobile }}</a>
+                  </td>
+                </tr>
+              </table>
             </div>
           </div>
           </div>
@@ -255,37 +293,29 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Boutons d'action : hors capture d'image -->
-    <div
-      v-if="(urlCard.phone || urlCard.mobile || urlCard.email) && (urlCard.phone !== '' || urlCard.mobile !== '' || urlCard.email !== '')"
-      class="pt-4 pb-4 px-4 sm:px-5 border border-zinc-200/80 flex flex-wrap items-center justify-center gap-3 sm:gap-4 bg-zinc-50/50 rounded-xl w-full max-w-2xl"
-    >
+    <div class="card-cta-zone w-full max-w-2xl">
+      <NuxtLink
+        :to="editCardUrl"
+        class="card-cta-icon"
+        title="Mettre à jour les informations"
+      >
+        <UIcon name="i-lucide-pencil" class="size-5" />
+      </NuxtLink>
       <a
         v-if="urlCard.phone && urlCard.phone !== ''"
         :href="`tel:${urlCard.phone}`"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-(--ui-primary) hover:text-white text-zinc-700 text-sm font-medium transition-colors"
+        class="card-cta-icon"
         title="Appeler"
       >
         <UIcon name="i-lucide-phone" class="size-5" />
-        <span>Appeler</span>
       </a>
-      <button
-        v-if="urlCard.mobile && urlCard.mobile !== ''"
-        type="button"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-(--ui-primary) hover:text-white text-zinc-700 text-sm font-medium transition-colors"
-        title="Ajouter aux contacts"
-        @click="qrRef?.downloadVCard()"
-      >
-        <UIcon name="i-lucide-smartphone" class="size-5" />
-        <span>Ajouter aux contacts</span>
-      </button>
       <a
         v-if="urlCard.email && urlCard.email !== ''"
         :href="`mailto:${urlCard.email}`"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-(--ui-primary) hover:text-white text-zinc-700 text-sm font-medium transition-colors"
+        class="card-cta-icon"
         title="Envoyer un email"
       >
         <UIcon name="i-lucide-mail" class="size-5" />
-        <span>Envoyer un email</span>
       </a>
     </div>
   </div>
