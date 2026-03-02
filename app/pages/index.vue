@@ -1,25 +1,18 @@
 <script setup lang="ts">
 const route = useRoute();
 const appConfig = useAppConfig();
-const type = ref<string | undefined>();
-const info = ref();
+const type = computed(() => route.query.type as string | undefined);
+const info = computed(() => route.query);
 
-onMounted(() => {
-  type.value = route.query.type as string;
-  info.value = route.query;
-  if (type.value === "view") {
-    const color = route.query.color as string;
-    console.log("Type:", type.value);
-
-    if (color) {
+watch(
+  () => route.query.color,
+  (color) => {
+    if (type.value === "view" && typeof color === "string" && color) {
       appConfig.ui.colors.primary = color;
     }
-  } else if (!type.value || type.value !== "view") {
-    console.log("View Mode", type.value);
-  }
-
-  console.log("INFO:", info.value);
-});
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

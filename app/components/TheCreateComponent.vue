@@ -66,10 +66,8 @@ watch(
   }
 );
 
-onMounted(() => {
-  baseURL.value = `${window.location.origin}${window.location.pathname}`;
-
-  const getQueryValue = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
+const getQueryValue = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
+const hydrateFromQuery = () => {
   const query = route.query;
 
   newCard.value.fName = getQueryValue(query.fName);
@@ -86,7 +84,17 @@ onMounted(() => {
     newCard.value.color = color;
     appConfig.ui.colors.primary = color;
   }
+};
+
+onMounted(() => {
+  baseURL.value = `${window.location.origin}${window.location.pathname}`;
 });
+
+watch(
+  () => route.query,
+  () => hydrateFromQuery(),
+  { immediate: true }
+);
 </script>
 
 <template>
