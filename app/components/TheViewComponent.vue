@@ -74,7 +74,7 @@ async function openShare() {
     try {
       await navigator.share({
         title,
-        text: `${text} ${pageUrl}`,
+        text: `${text}\n\n${pageUrl}`,
         url: pageUrl,
       });
       sharePopoverOpen.value = false;
@@ -88,8 +88,7 @@ async function openShare() {
 }
 
 function shareViaWhatsApp() {
-  const u = encodeURIComponent(shareUrl.value);
-  const t = encodeURIComponent(`${shareText.value} ${shareUrl.value}`);
+  const t = encodeURIComponent(`${shareText.value}\n\n${shareUrl.value}`);
   window.open(`https://wa.me/?text=${t}`, "_blank", "noopener,noreferrer");
   sharePopoverOpen.value = false;
 }
