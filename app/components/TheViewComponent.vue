@@ -56,6 +56,23 @@ const shareUrl = computed(() => {
   if (typeof window !== "undefined") return window.location.href;
   return url.value;
 });
+
+/** URL courte pour partage (WhatsApp, etc.) : paramètres en base64, pas d’email/tél en clair → lien entièrement cliquable. */
+function buildShortShareUrl(): string {
+  if (typeof window === "undefined") return shareUrl.value;
+  const search = window.location.search.slice(1);
+  if (!search) return shareUrl.value;
+  try {
+    const encoded = btoa(encodeURIComponent(search))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+    return `${window.location.origin}${window.location.pathname}?s=${encoded}`;
+  } catch {
+    return shareUrl.value;
+  }
+}
+const shareUrlShort = computed(() => buildShortShareUrl());
+
 const shareText = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
   return name ? `Découvrez ma carte de visite : ${name}` : "Découvrez cette carte de visite.";
@@ -68,7 +85,7 @@ const nativeShareAvailable = ref(false);
 async function openShare() {
   const title = shareTitle.value;
   const text = shareText.value;
-  const pageUrl = shareUrl.value;
+  const pageUrl = shareUrlShort.value;
 
   if (typeof navigator !== "undefined" && navigator.share) {
     try {
@@ -88,7 +105,7 @@ async function openShare() {
 }
 
 function shareViaWhatsApp() {
-  const t = encodeURIComponent(`${shareUrl.value}\n\n${shareText.value}`);
+  const t = encodeURIComponent(`${shareUrlShort.value}\n\n${shareText.value}`);
   window.open(`https://wa.me/?text=${t}`, "_blank", "noopener,noreferrer");
   sharePopoverOpen.value = false;
 }

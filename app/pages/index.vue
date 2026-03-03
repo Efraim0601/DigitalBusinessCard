@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
+const router = useRouter();
 const appConfig = useAppConfig();
 const type = computed(() => route.query.type as string | undefined);
 const info = computed(() => route.query);
@@ -13,6 +14,23 @@ watch(
   },
   { immediate: true }
 );
+
+onMounted(() => {
+  const s = route.query.s;
+  if (typeof s !== "string" || !s) return;
+  try {
+    const decoded = decodeURIComponent(
+      atob(s.replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    const query: Record<string, string> = {};
+    new URLSearchParams(decoded).forEach((value, key) => {
+      query[key] = value;
+    });
+    router.replace({ path: route.path, query });
+  } catch {
+    // ignore invalid s
+  }
+});
 </script>
 
 <template>
