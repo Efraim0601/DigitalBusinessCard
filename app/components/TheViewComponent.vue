@@ -48,8 +48,86 @@ const editCardUrl = computed(() => {
   return `/?${params.toString()}`;
 });
 
+const shareTitle = computed(() => {
+  const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
+  return name ? `Carte de visite - ${name}` : "Carte de visite - Afriland First Bank";
+});
+const shareUrl = computed(() => {
+  if (typeof window !== "undefined") return window.location.href;
+  return url.value;
+});
+const shareText = computed(() => {
+  const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
+  return name ? `Découvrez ma carte de visite : ${name}` : "Découvrez cette carte de visite.";
+});
+
+const sharePopoverOpen = ref(false);
+/** True quand l’appareil expose le partage natif (Android/iOS ou navigateur avec Web Share API). */
+const nativeShareAvailable = ref(false);
+
+async function openShare() {
+  const title = shareTitle.value;
+  const text = shareText.value;
+  const pageUrl = shareUrl.value;
+
+  if (typeof navigator !== "undefined" && navigator.share) {
+    try {
+      await navigator.share({
+        title,
+        text: `${text} ${pageUrl}`,
+        url: pageUrl,
+      });
+      sharePopoverOpen.value = false;
+      return;
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
+      if (nativeShareAvailable.value) return;
+    }
+  }
+  sharePopoverOpen.value = true;
+}
+
+function shareViaWhatsApp() {
+  const u = encodeURIComponent(shareUrl.value);
+  const t = encodeURIComponent(`${shareText.value} ${shareUrl.value}`);
+  window.open(`https://wa.me/?text=${t}`, "_blank", "noopener,noreferrer");
+  sharePopoverOpen.value = false;
+}
+function shareViaTelegram() {
+  const u = encodeURIComponent(shareUrl.value);
+  const t = encodeURIComponent(shareTitle.value);
+  window.open(`https://t.me/share/url?url=${u}&text=${t}`, "_blank", "noopener,noreferrer");
+  sharePopoverOpen.value = false;
+}
+function shareViaTwitter() {
+  const u = encodeURIComponent(shareUrl.value);
+  const t = encodeURIComponent(shareTitle.value);
+  window.open(`https://twitter.com/intent/tweet?url=${u}&text=${t}`, "_blank", "noopener,noreferrer");
+  sharePopoverOpen.value = false;
+}
+function shareViaLinkedIn() {
+  const u = encodeURIComponent(shareUrl.value);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${u}`, "_blank", "noopener,noreferrer");
+  sharePopoverOpen.value = false;
+}
+function shareViaEmail() {
+  const subj = encodeURIComponent(shareTitle.value);
+  const body = encodeURIComponent(`${shareText.value}\n\n${shareUrl.value}`);
+  window.location.href = `mailto:?subject=${subj}&body=${body}`;
+  sharePopoverOpen.value = false;
+}
+async function shareViaCopyLink() {
+  await copyLink();
+  sharePopoverOpen.value = false;
+}
+
 const dropdownItems = computed<DropdownMenuItem[][]>(() => [
   [
+    {
+      label: "Partager",
+      icon: "i-lucide-share-2",
+      onSelect: () => openShare(),
+    },
     {
       label: "Télécharger le QR code",
       icon: "i-lucide-download",
@@ -157,6 +235,7 @@ onMounted(() => {
   url.value = window.location.href;
   updateScale();
   window.addEventListener("resize", updateScale, { passive: true });
+  nativeShareAvailable.value = typeof navigator !== "undefined" && !!navigator.share;
 });
 
 onBeforeUnmount(() => {
@@ -301,6 +380,83 @@ onBeforeUnmount(() => {
       >
         <UIcon name="i-lucide-pencil" class="size-5" />
       </NuxtLink>
+      <!-- Sur Android/iOS : un clic ouvre directement le partage natif (Web Share API). -->
+      <!-- Sur desktop sans partage natif : popover avec WhatsApp, Telegram, etc. -->
+      <template v-if="nativeShareAvailable">
+        <button
+          type="button"
+          class="card-cta-icon"
+          title="Partager (lien et QR code)"
+          @click="openShare"
+        >
+          <UIcon name="i-lucide-share-2" class="size-5" />
+        </button>
+      </template>
+      <UPopover v-else v-model:open="sharePopoverOpen" :popper="{ placement: 'top' }">
+        <button
+          type="button"
+          class="card-cta-icon"
+          title="Partager (lien et QR code)"
+          @click.stop.prevent="openShare"
+        >
+          <UIcon name="i-lucide-share-2" class="size-5" />
+        </button>
+        <template #content>
+          <div class="p-3 min-w-[200px] bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg">
+            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Partager via</p>
+            <div class="flex flex-col gap-1">
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareViaWhatsApp"
+              >
+                <UIcon name="i-simple-icons-whatsapp" class="size-5 text-[#25D366]" />
+                <span>WhatsApp</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareViaTelegram"
+              >
+                <UIcon name="i-simple-icons-telegram" class="size-5 text-[#26A5E4]" />
+                <span>Telegram</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareViaTwitter"
+              >
+                <UIcon name="i-simple-icons-x" class="size-5" />
+                <span>X (Twitter)</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareViaLinkedIn"
+              >
+                <UIcon name="i-simple-icons-linkedin" class="size-5 text-[#0A66C2]" />
+                <span>LinkedIn</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareViaEmail"
+              >
+                <UIcon name="i-lucide-mail" class="size-5" />
+                <span>E-mail</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareViaCopyLink"
+              >
+                <UIcon name="i-lucide-link" class="size-5" />
+                <span>Copier le lien</span>
+              </button>
+            </div>
+          </div>
+        </template>
+      </UPopover>
       <a
         v-if="urlCard.phone && urlCard.phone !== ''"
         :href="`tel:${urlCard.phone}`"
