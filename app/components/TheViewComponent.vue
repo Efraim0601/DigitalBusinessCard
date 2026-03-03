@@ -305,17 +305,17 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Nom & titre -->
-          <div class="mb-[14px]">
+          <div class="mb-2">
             <h1 v-if="urlCard.fName || urlCard.lName" class="text-[20px] font-bold text-[#1a1a2e] leading-tight font-[Arial,Helvetica,sans-serif]">
               {{ [urlCard.fName, urlCard.lName].filter(Boolean).join(" ") }}
             </h1>
-            <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-[12px] text-[#333] mt-[5px] leading-[1.35] font-[Arial,Helvetica,sans-serif]">
+            <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-sm font-bold text-[#333] mt-1 leading-[1.35] font-[Arial,Helvetica,sans-serif]">
               {{ urlCard.title }}
             </p>
           </div>
 
           <!-- Contact -->
-          <div class="mt-auto flex justify-between items-end gap-4">
+          <div class="mt-1 flex justify-between items-end gap-4">
             <div class="text-[11px] text-[#222] leading-[1.7] font-[Arial,Helvetica,sans-serif]">
               <div v-if="company?.address" class="font-bold text-[11.5px]">{{ company.address }}</div>
               <table class="border-collapse">
