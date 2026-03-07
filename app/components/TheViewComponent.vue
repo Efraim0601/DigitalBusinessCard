@@ -100,72 +100,28 @@ const shareText = computed(() => {
 });
 
 const sharePopoverOpen = ref(false);
-/** True quand l’appareil expose le partage natif (Android/iOS ou navigateur avec Web Share API). */
-const nativeShareAvailable = ref(false);
 
-async function openShare() {
+/** Partage natif du lien de la carte (Web Share API si dispo, sinon copie du lien). */
+async function shareCardLink() {
   const title = shareTitle.value;
-  const text = shareText.value;
-  const pageUrl = shareUrlShort.value;
+  const pageUrl = shareUrlShort.value || shareUrl.value;
+  const text = `${shareText.value}\n\n${pageUrl}`;
 
   if (typeof navigator !== "undefined" && navigator.share) {
     try {
       await navigator.share({
         title,
-        text: `${pageUrl}\n\n${text}`,
+        text,
         url: pageUrl,
       });
-      sharePopoverOpen.value = false;
       return;
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
-      if (nativeShareAvailable.value) return;
     }
   }
-  sharePopoverOpen.value = true;
-}
 
-function shareViaWhatsApp() {
-  const encodedText = encodeURIComponent(`${shareUrlShort.value}\n\n${shareText.value}`);
-  window.open(`https://wa.me/?text=${encodedText}`, "_blank", "noopener,noreferrer");
-  sharePopoverOpen.value = false;
-}
-function shareViaTelegram() {
-  const u = encodeURIComponent(shareUrl.value);
-  const t = encodeURIComponent(shareTitle.value);
-  window.open(`https://t.me/share/url?url=${u}&text=${t}`, "_blank", "noopener,noreferrer");
-  sharePopoverOpen.value = false;
-}
-function shareViaTwitter() {
-  const u = encodeURIComponent(shareUrl.value);
-  const t = encodeURIComponent(shareTitle.value);
-  window.open(`https://twitter.com/intent/tweet?url=${u}&text=${t}`, "_blank", "noopener,noreferrer");
-  sharePopoverOpen.value = false;
-}
-function shareViaLinkedIn() {
-  const u = encodeURIComponent(shareUrl.value);
-  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${u}`, "_blank", "noopener,noreferrer");
-  sharePopoverOpen.value = false;
-}
-function shareViaEmail() {
-  const subj = encodeURIComponent(shareTitle.value);
-  const body = encodeURIComponent(`${shareText.value}\n\n${shareUrl.value}`);
-  window.location.href = `mailto:?subject=${subj}&body=${body}`;
-  sharePopoverOpen.value = false;
-}
-async function shareViaCopyLink() {
   await copyLink();
-  sharePopoverOpen.value = false;
 }
-
-const dropdownItems = computed<DropdownMenuItem[][]>(() => [
-  [
-    { label: t("action.share"), icon: "i-lucide-share-2", onSelect: () => openShare() },
-    { label: t("action.downloadQR"), icon: "i-lucide-download", onSelect: () => qrRef.value?.downloadSVG() },
-    { label: t("action.downloadCard"), icon: "i-lucide-id-card", onSelect: downloadCardImage },
-    { label: t("action.copyLink"), icon: "i-lucide-link", onSelect: () => copyLink() },
-  ],
-]);
 
 function waitForImages(el: HTMLElement): Promise<void> {
   const imgs = el.querySelectorAll("img");
@@ -318,7 +274,6 @@ onMounted(() => {
   url.value = window.location.href;
   updateScale();
   window.addEventListener("resize", updateScale, { passive: true });
-  nativeShareAvailable.value = typeof navigator !== "undefined" && !!navigator.share;
 });
 
 onBeforeUnmount(() => {
@@ -441,7 +396,7 @@ onBeforeUnmount(() => {
           type="button"
           class="card-cta-icon"
           :title="t('action.share')"
-          @click.stop.prevent="openShare"
+          @click.stop.prevent="sharePopoverOpen = true"
         >
           <UIcon name="i-lucide-share-2" class="size-5" />
         </button>
@@ -466,47 +421,15 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="shareViaWhatsApp"
+                  @click="shareCardLink().then(() => { sharePopoverOpen = false; })"
                 >
-                  <UIcon name="i-simple-icons-whatsapp" class="size-5 text-[#25D366]" />
-                  <span>WhatsApp</span>
+                  <UIcon name="i-lucide-share-2" class="size-5" />
+                  <span>{{ t('share.shareCardLink') }}</span>
                 </button>
                 <button
                   type="button"
                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="shareViaTelegram"
-                >
-                  <UIcon name="i-simple-icons-telegram" class="size-5 text-[#26A5E4]" />
-                  <span>Telegram</span>
-                </button>
-                <button
-                  type="button"
-                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="shareViaTwitter"
-                >
-                  <UIcon name="i-simple-icons-x" class="size-5" />
-                  <span>X (Twitter)</span>
-                </button>
-                <button
-                  type="button"
-                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="shareViaLinkedIn"
-                >
-                  <UIcon name="i-simple-icons-linkedin" class="size-5 text-[#0A66C2]" />
-                  <span>LinkedIn</span>
-                </button>
-                <button
-                  type="button"
-                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="shareViaEmail"
-                >
-                  <UIcon name="i-lucide-mail" class="size-5" />
-                  <span>E-mail</span>
-                </button>
-                <button
-                  type="button"
-                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="shareViaCopyLink"
+                  @click="copyLink(); sharePopoverOpen = false"
                 >
                   <UIcon name="i-lucide-link" class="size-5" />
                   <span>{{ t('action.copyLink') }}</span>
