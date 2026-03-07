@@ -2,7 +2,8 @@ export default defineAppConfig({
   // Informations statiques de l'entreprise (carte de visite)
   company: {
     name: "Afriland First Bank",
-    logo: "/Logo_Afriland-remove.png",
+    /** Image de fond de la carte (exporter le PDF en PNG et placer dans public/). Vide = pas de logo ni fond template. */
+    cardBackground: "/carte-digitale-bg.png",
     address: "Place de l'Indépendance",
     addressComplement: "B.P: 11834 Yaoundé - Cameroun",
     telex: "8907 KN",

@@ -20,6 +20,8 @@ const { urlCard } = defineProps<{
   urlCard: Card;
 }>();
 
+const { t } = useAppLocale();
+
 const company = computed(() => appConfig.company ?? {
   name: "Afriland First Bank",
   address: "Place de l'Indépendance",
@@ -50,7 +52,7 @@ const editCardUrl = computed(() => {
 
 const shareTitle = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
-  return name ? `Carte de visite - ${name}` : "Carte de visite - Afriland First Bank";
+  return name ? t("share.cardTitle", { name }) : t("share.cardTitleDefault");
 });
 const shareUrl = computed(() => {
   if (typeof window !== "undefined") return window.location.href;
@@ -75,7 +77,7 @@ const shareUrlShort = computed(() => buildShortShareUrl());
 
 const shareText = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
-  return name ? `Découvrez ma carte de visite : ${name}` : "Découvrez cette carte de visite.";
+  return name ? t("share.discover", { name }) : t("share.discoverDefault");
 });
 
 const sharePopoverOpen = ref(false);
@@ -105,8 +107,8 @@ async function openShare() {
 }
 
 function shareViaWhatsApp() {
-  const t = encodeURIComponent(`${shareUrlShort.value}\n\n${shareText.value}`);
-  window.open(`https://wa.me/?text=${t}`, "_blank", "noopener,noreferrer");
+  const encodedText = encodeURIComponent(`${shareUrlShort.value}\n\n${shareText.value}`);
+  window.open(`https://wa.me/?text=${encodedText}`, "_blank", "noopener,noreferrer");
   sharePopoverOpen.value = false;
 }
 function shareViaTelegram() {
@@ -139,26 +141,10 @@ async function shareViaCopyLink() {
 
 const dropdownItems = computed<DropdownMenuItem[][]>(() => [
   [
-    {
-      label: "Partager",
-      icon: "i-lucide-share-2",
-      onSelect: () => openShare(),
-    },
-    {
-      label: "Télécharger le QR code",
-      icon: "i-lucide-download",
-      onSelect: () => qrRef.value?.downloadSVG(),
-    },
-    {
-      label: "Télécharger la carte de visite",
-      icon: "i-lucide-id-card",
-      onSelect: downloadCardImage,
-    },
-    {
-      label: "Copier le lien",
-      icon: "i-lucide-link",
-      onSelect: () => copyLink(),
-    },
+    { label: t("action.share"), icon: "i-lucide-share-2", onSelect: () => openShare() },
+    { label: t("action.downloadQR"), icon: "i-lucide-download", onSelect: () => qrRef.value?.downloadSVG() },
+    { label: t("action.downloadCard"), icon: "i-lucide-id-card", onSelect: downloadCardImage },
+    { label: t("action.copyLink"), icon: "i-lucide-link", onSelect: () => copyLink() },
   ],
 ]);
 
@@ -193,7 +179,8 @@ async function downloadCardImage() {
       pixelRatio: 2,
       skipFonts: true,
     });
-    const fileName = `carte-${[urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "visite"}.png`;
+    const namePart = [urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "card";
+    const fileName = `${t("download.cardFilename")}-${namePart}.png`;
     const link = document.createElement("a");
     try {
       const res = await fetch(dataUrl);
@@ -261,25 +248,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col items-center w-full gap-4 px-1 sm:px-0 touch-manipulation">
-    <!-- QR code au-dessus de la carte + menu dropdown -->
-    <div class="flex flex-col items-center w-full gap-3">
-      <div class="flex flex-col items-center justify-center w-full bg-white/80 rounded-xl p-4 border border-zinc-200/80">
-        <QRCode ref="qrRef" :url="url" :card="urlCard" />
-      </div>
-      <div class="flex flex-col items-center gap-2">
-        <UDropdownMenu :items="dropdownItems">
-          <UButton
-            icon="i-lucide-ellipsis"
-            variant="outline"
-            color="primary"
-            label="Options"
-            trailing-icon="i-lucide-chevron-down"
-          />
-        </UDropdownMenu>
-        <p v-if="copySuccess" class="text-sm text-(--ui-primary)">
-          Lien copié dans le presse-papier.
-        </p>
-      </div>
+    <!-- QR code masqué : gardé en DOM pour downloadVCard (enregistrer le contact), le visiteur qui a scanné ne le voit pas -->
+    <div class="absolute -left-[9999px] w-48 h-48 opacity-0 pointer-events-none overflow-hidden">
+      <QRCode ref="qrRef" :url="url" :card="urlCard" />
     </div>
 
     <!-- Carte de visite : format fixe + scale (pas de responsive layout) -->
@@ -296,30 +267,18 @@ onBeforeUnmount(() => {
           transformOrigin: 'top center',
         }"
       >
-        <!-- Partie capturée en image (sans les icônes en bas) -->
+        <!-- Partie capturée en image (sans les icônes en bas) ; fond = template Carte_digitale (logo inclus dans l’image de fond) -->
         <div
-        ref="cardContentRef"
-        class="business-card relative overflow-hidden border border-zinc-200 shadow-[0_4px_20px_rgba(0,0,0,0.15)] bg-white"
+          ref="cardContentRef"
+          class="business-card relative overflow-hidden border-2 border-gray-400 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+          :style="{
+            backgroundColor: '#ffffff',
+            backgroundImage: company?.cardBackground ? `url(${company.cardBackground})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }"
         >
-          <div class="h-full flex flex-col px-8 pt-[18px] pb-5">
-          <!-- Logo -->
-          <div class="flex items-center mb-[14px]">
-            <img
-              v-if="company?.logo"
-              :src="company.logo"
-              alt="Afriland First Bank"
-              width="320"
-              height="74"
-              class="w-[300px] h-[74px] object-cover object-left"
-            />
-            <div v-else class="flex items-baseline flex-wrap gap-1">
-              <template v-if="company?.name">
-                <span class="text-lg sm:text-xl font-bold text-[#1a1a1a] border-b-2 border-red-600">{{ company.name.split(" ")[0] }}</span>
-                <span class="text-lg sm:text-xl font-bold text-[#1a1a1a]">{{ company.name.split(" ").slice(1).join(" ") }}</span>
-              </template>
-            </div>
-          </div>
-
+          <div class="h-full flex flex-col px-8 pt-[113px] pb-5 relative z-[1]">
           <!-- Nom & titre -->
           <div class="mb-2">
             <h1 v-if="urlCard.fName || urlCard.lName" class="text-[20px] font-bold text-[#1a1a2e] leading-tight font-[Arial,Helvetica,sans-serif]">
@@ -331,26 +290,26 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Contact -->
-          <div class="mt-1 flex justify-between items-end gap-4">
+          <div class="mt-5 flex justify-between items-end gap-4">
             <div class="text-[11px] text-[#222] leading-[1.7] font-[Arial,Helvetica,sans-serif]">
               <div v-if="company?.address" class="font-bold text-[11.5px]">{{ company.address }}</div>
               <table class="border-collapse">
                 <tr v-if="company?.addressComplement">
-                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">B.P :</td>
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">{{ t('card.bp') }}</td>
                   <td class="align-top text-[11px] leading-[1.55]">{{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}</td>
                 </tr>
                 <tr v-if="company?.telex">
-                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">Telex :</td>
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">{{ t('card.telex') }}</td>
                   <td class="align-top text-[11px] leading-[1.55]">{{ company.telex }}</td>
                 </tr>
                 <tr v-if="urlCard.email && urlCard.email !== ''">
-                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">E-mail :</td>
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">{{ t('card.email') }}</td>
                   <td class="align-top text-[11px] leading-[1.55]">
                     <a :href="`mailto:${urlCard.email}`" class="text-[#222] hover:underline break-all">{{ urlCard.email }}</a>
                   </td>
                 </tr>
                 <tr v-if="company?.website">
-                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">Site Web :</td>
+                  <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">{{ t('card.website') }}</td>
                   <td class="align-top text-[11px] leading-[1.55]">
                     <a :href="websiteUrl" target="_blank" rel="noopener noreferrer" class="text-[#222] hover:underline">
                       {{ company.website }}
@@ -362,19 +321,19 @@ onBeforeUnmount(() => {
             <div class="text-[11px] text-[#222] text-right font-[Arial,Helvetica,sans-serif]">
               <table class="border-collapse">
                 <tr v-if="urlCard.phone && urlCard.phone !== ''">
-                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">Tél :</td>
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.phone') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
                     <a :href="`tel:${urlCard.phone}`" class="text-[#222] hover:underline">{{ urlCard.phone }}</a>
                   </td>
                 </tr>
                 <tr v-if="urlCard.fax && urlCard.fax !== ''">
-                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">Fax :</td>
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.fax') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
                     <a :href="`tel:${urlCard.fax}`" class="text-[#222] hover:underline">{{ urlCard.fax }}</a>
                   </td>
                 </tr>
                 <tr v-if="urlCard.mobile && urlCard.mobile !== ''">
-                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">Mob :</td>
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.mobile') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
                     <a :href="`tel:${urlCard.mobile}`" class="text-[#222] hover:underline">{{ urlCard.mobile }}</a>
                   </td>
@@ -387,22 +346,20 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Boutons d'action : hors capture d'image -->
+    <!-- Boutons d'action : appeler, enregistrer le contact, partager (vue visiteur qui a scanné) -->
     <div class="card-cta-zone w-full max-w-2xl">
       <NuxtLink
         :to="editCardUrl"
         class="card-cta-icon"
-        title="Mettre à jour les informations"
+        :title="t('action.edit')"
       >
         <UIcon name="i-lucide-pencil" class="size-5" />
       </NuxtLink>
-      <!-- Sur Android/iOS : un clic ouvre directement le partage natif (Web Share API). -->
-      <!-- Sur desktop sans partage natif : popover avec WhatsApp, Telegram, etc. -->
       <template v-if="nativeShareAvailable">
         <button
           type="button"
           class="card-cta-icon"
-          title="Partager (lien et QR code)"
+          :title="t('action.share')"
           @click="openShare"
         >
           <UIcon name="i-lucide-share-2" class="size-5" />
@@ -412,14 +369,14 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="card-cta-icon"
-          title="Partager (lien et QR code)"
+          :title="t('action.share')"
           @click.stop.prevent="openShare"
         >
           <UIcon name="i-lucide-share-2" class="size-5" />
         </button>
         <template #content>
           <div class="p-3 min-w-[200px] bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg">
-            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Partager via</p>
+            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">{{ t('action.shareVia') }}</p>
             <div class="flex flex-col gap-1">
               <button
                 type="button"
@@ -467,17 +424,25 @@ onBeforeUnmount(() => {
                 @click="shareViaCopyLink"
               >
                 <UIcon name="i-lucide-link" class="size-5" />
-                <span>Copier le lien</span>
+                <span>{{ t('action.copyLink') }}</span>
               </button>
             </div>
           </div>
         </template>
       </UPopover>
+      <button
+        type="button"
+        class="card-cta-icon"
+        :title="t('action.saveContact')"
+        @click="qrRef?.downloadVCard()"
+      >
+        <UIcon name="i-lucide-user-plus" class="size-5" />
+      </button>
       <a
         v-if="urlCard.phone && urlCard.phone !== ''"
         :href="`tel:${urlCard.phone}`"
         class="card-cta-icon"
-        title="Appeler"
+        :title="t('action.call')"
       >
         <UIcon name="i-lucide-phone" class="size-5" />
       </a>
@@ -485,7 +450,7 @@ onBeforeUnmount(() => {
         v-if="urlCard.email && urlCard.email !== ''"
         :href="`mailto:${urlCard.email}`"
         class="card-cta-icon"
-        title="Envoyer un email"
+        :title="t('action.sendEmail')"
       >
         <UIcon name="i-lucide-mail" class="size-5" />
       </a>

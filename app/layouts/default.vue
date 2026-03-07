@@ -4,6 +4,7 @@
   <div>
     <ButtonsTheCreateButton />
     <ButtonsTheColorSelector />
+    <ButtonsTheLocaleToggle />
     <ButtonsTheColorModeButton />
     <slot />
   </div>

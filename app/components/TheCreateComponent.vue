@@ -2,6 +2,7 @@
 import type { Card } from "~~/types/card";
 
 const appConfig = useAppConfig();
+const { t } = useAppLocale();
 const route = useRoute();
 const baseURL = ref("");
 
@@ -100,45 +101,45 @@ watch(
 <template>
   <div class="flex flex-col justify-between gap-4 w-full mt-12">
     <QRCode :url />
-    <h1 class="font-bold text-5xl text-(--ui-primary)">Create A Card</h1>
+    <h1 class="font-bold text-5xl text-(--ui-primary)">{{ t('create.title') }}</h1>
 
     <UForm
       :state="newCard"
       class="w-full flex flex-col gap-3"
       @submit="console.log('NewCard:', newCard)"
     >
-      <UFormField label="First Name" name="fName" class="w-full">
+      <UFormField :label="t('create.firstName')" name="fName" class="w-full">
         <UInput v-model="newCard.fName" class="w-full" />
       </UFormField>
-      <UFormField label="Last Name" name="lName" class="w-full">
+      <UFormField :label="t('create.lastName')" name="lName" class="w-full">
         <UInput v-model="newCard.lName" class="w-full" />
       </UFormField>
-      <UFormField label="Company" name="co" class="w-full">
+      <UFormField :label="t('create.company')" name="co" class="w-full">
         <UInput v-model="newCard.co" class="w-full" />
       </UFormField>
-      <UFormField label="Title" name="title" class="w-full">
+      <UFormField :label="t('create.titleField')" name="title" class="w-full">
         <UInput v-model="newCard.title" class="w-full" />
       </UFormField>
-      <UFormField label="Email" name="email" class="w-full">
+      <UFormField :label="t('create.email')" name="email" class="w-full">
         <UInput v-model="newCard.email" class="w-full" @change="formatEmail" />
       </UFormField>
-      <UFormField label="Phone" name="phone" class="w-full">
+      <UFormField :label="t('create.phone')" name="phone" class="w-full">
         <UInput
           v-model="newCard.phone"
           type="tel"
-          label="Phone"
+          :label="t('create.phone')"
           name="phone"
           class="w-full"
         />
       </UFormField>
-      <UFormField label="Fax" name="fax" class="w-full">
+      <UFormField :label="t('create.fax')" name="fax" class="w-full">
         <UInput v-model="newCard.fax" type="tel" class="w-full" />
       </UFormField>
-      <UFormField label="Mobile" name="mobile" class="w-full">
+      <UFormField :label="t('create.mobile')" name="mobile" class="w-full">
         <UInput v-model="newCard.mobile" type="tel" class="w-full" />
       </UFormField>
 
-      <a :href="`${url}`"> <UButton label="View Your Card" /></a>
+      <a :href="`${url}`"> <UButton :label="t('create.viewCard')" /></a>
     </UForm>
   </div>
 </template>

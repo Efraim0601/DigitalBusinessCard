@@ -18,7 +18,7 @@ const isDark = computed({
       color="primary"
       variant="soft"
       size="lg"
-      class="absolute right-4 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95"
+      class="absolute right-20 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95"
       @click="isDark = !isDark"
     />
 

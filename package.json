@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "card-bg": "node scripts/generate-card-bg.mjs",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -31,6 +32,7 @@
     "@nuxt/eslint": "^1.2.0",
     "eslint": "^9.23.0",
     "nuxt-qrcode": "^0.4.1",
+    "pdf-to-img": "^5.0.0",
     "typescript": "^5.8.2"
   }
 }

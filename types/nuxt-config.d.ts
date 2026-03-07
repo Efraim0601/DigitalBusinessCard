@@ -3,6 +3,7 @@ declare module "nuxt/schema" {
     company?: {
       name?: string;
       logo?: string;
+      cardBackground?: string;
       address?: string;
       addressComplement?: string;
       telex?: string;
