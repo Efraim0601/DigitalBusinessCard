@@ -22,6 +22,16 @@ const { urlCard, isCreator = false } = defineProps<{
 }>();
 
 const { t } = useAppLocale();
+const route = useRoute();
+
+/** URL sans le paramètre owner : pour partage et QR, afin que le visiteur qui scanne ou ouvre le lien ne voie pas le bouton Éditer. */
+const publicUrl = computed(() => {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(route.query as Record<string, string>);
+  params.delete("owner");
+  const search = params.toString();
+  return `${window.location.origin}${route.path}${search ? `?${search}` : ""}`;
+});
 
 const company = computed(() => appConfig.company ?? {
   name: "Afriland First Bank",
@@ -55,23 +65,22 @@ const shareTitle = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
   return name ? t("share.cardTitle", { name }) : t("share.cardTitleDefault");
 });
-const shareUrl = computed(() => {
-  if (typeof window !== "undefined") return window.location.href;
-  return url.value;
-});
+const shareUrl = computed(() => publicUrl.value || url.value);
 
-/** URL courte pour partage (WhatsApp, etc.) : paramètres en base64, pas d’email/tél en clair → lien entièrement cliquable. */
+/** URL courte pour partage (WhatsApp, etc.) : paramètres en base64, sans owner → le visiteur ne reçoit pas les droits créateur. */
 function buildShortShareUrl(): string {
-  if (typeof window === "undefined") return shareUrl.value;
-  const search = window.location.search.slice(1);
-  if (!search) return shareUrl.value;
+  if (typeof window === "undefined") return publicUrl.value || "";
+  const params = new URLSearchParams(route.query as Record<string, string>);
+  params.delete("owner");
+  const search = params.toString();
+  if (!search) return `${window.location.origin}${route.path}`;
   try {
     const encoded = btoa(encodeURIComponent(search))
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
-    return `${window.location.origin}${window.location.pathname}?s=${encoded}`;
+    return `${window.location.origin}${route.path}?s=${encoded}`;
   } catch {
-    return shareUrl.value;
+    return publicUrl.value || "";
   }
 }
 const shareUrlShort = computed(() => buildShortShareUrl());
@@ -207,12 +216,7 @@ async function downloadCardImage() {
 }
 
 async function copyLink() {
-  const getCurrentPageUrl = () => {
-    if (typeof window !== "undefined") return window.location.href;
-    if (typeof document !== "undefined") return document.URL;
-    return url.value;
-  };
-  const linkToCopy = getCurrentPageUrl();
+  const linkToCopy = publicUrl.value || (typeof window !== "undefined" ? window.location.href : url.value);
   try {
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(linkToCopy);
@@ -251,7 +255,7 @@ onBeforeUnmount(() => {
   <div class="flex flex-col items-center w-full gap-4 px-1 sm:px-0 touch-manipulation">
     <!-- QR code masqué : gardé en DOM pour downloadVCard (enregistrer le contact), le visiteur qui a scanné ne le voit pas -->
     <div class="absolute -left-[9999px] w-48 h-48 opacity-0 pointer-events-none overflow-hidden">
-      <QRCode ref="qrRef" :url="url" :card="urlCard" />
+      <QRCode ref="qrRef" :url="publicUrl || url" :card="urlCard" />
     </div>
 
     <!-- Carte de visite : format fixe + scale (pas de responsive layout) -->
@@ -445,7 +449,7 @@ onBeforeUnmount(() => {
           <div class="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg flex flex-col items-center gap-3">
             <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ t('action.scanQR') }}</p>
             <div class="w-40 h-40 flex items-center justify-center bg-white p-2 rounded-lg">
-              <QRCode :url="url" :card="urlCard" />
+              <QRCode :url="publicUrl || url" :card="urlCard" />
             </div>
             <UButton
               size="sm"
