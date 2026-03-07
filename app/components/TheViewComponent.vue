@@ -16,21 +16,29 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard, isCreator = false } = defineProps<{
+const { urlCard, isCreator = false, isEmployee = false } = defineProps<{
   urlCard: Card;
   isCreator?: boolean;
+  isEmployee?: boolean;
 }>();
 
 const { t } = useAppLocale();
 const route = useRoute();
 
-/** URL sans le paramètre owner : pour partage et QR, afin que le visiteur qui scanne ou ouvre le lien ne voie pas le bouton Éditer. */
+/** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
 const publicUrl = computed(() => {
   if (typeof window === "undefined") return "";
   const params = new URLSearchParams(route.query as Record<string, string>);
   params.delete("owner");
+  params.delete("employee");
   const search = params.toString();
   return `${window.location.origin}${route.path}${search ? `?${search}` : ""}`;
+});
+
+/** Lien pour l'employé (RH envoie à Marco) : accès à la carte + QR code, sans droit d'édition. */
+const employeeLink = computed(() => {
+  const base = publicUrl.value;
+  return base ? `${base}${base.includes("?") ? "&" : "?"}employee=1` : "";
 });
 
 const company = computed(() => appConfig.company ?? {
@@ -72,6 +80,7 @@ function buildShortShareUrl(): string {
   if (typeof window === "undefined") return publicUrl.value || "";
   const params = new URLSearchParams(route.query as Record<string, string>);
   params.delete("owner");
+  params.delete("employee");
   const search = params.toString();
   if (!search) return `${window.location.origin}${route.path}`;
   try {
@@ -215,6 +224,49 @@ async function downloadCardImage() {
   }
 }
 
+/** Partager l'image de la carte (fichier PNG) : Web Share API si disponible, sinon téléchargement. */
+async function shareCardImage() {
+  const prevScale = cardScale.value;
+  cardScale.value = 1;
+  await nextTick();
+  const el = cardContentRef.value;
+  if (!el) return;
+  try {
+    await waitForImages(el);
+    const dataUrl = await toPng(el, {
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+      pixelRatio: 2,
+      skipFonts: true,
+    });
+    const namePart = [urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "card";
+    const fileName = `${t("download.cardFilename")}-${namePart}.png`;
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], fileName, { type: "image/png" });
+    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: shareTitle.value,
+        text: shareText.value,
+        files: [file],
+      });
+    } else {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 100);
+    }
+  } catch (e) {
+    if ((e as Error)?.name !== "AbortError") console.error("Share card image:", e);
+  } finally {
+    cardScale.value = prevScale;
+  }
+}
+
 async function copyLink() {
   const linkToCopy = publicUrl.value || (typeof window !== "undefined" ? window.location.href : url.value);
   try {
@@ -233,9 +285,32 @@ async function copyLink() {
     copySuccess.value = true;
     setTimeout(() => { copySuccess.value = false; }, 2500);
   } catch (e) {
-    // Last fallback: open native prompt with current URL.
     if (typeof window !== "undefined") window.prompt("Copiez ce lien :", linkToCopy);
     console.error("Copier le lien:", e);
+  }
+}
+
+async function copyEmployeeLink() {
+  const linkToCopy = employeeLink.value;
+  if (!linkToCopy) return;
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(linkToCopy);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = linkToCopy;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    copySuccess.value = true;
+    setTimeout(() => { copySuccess.value = false; }, 2500);
+  } catch (e) {
+    if (typeof window !== "undefined") window.prompt("Copiez le lien employé :", linkToCopy);
+    console.error("Copier lien employé:", e);
   }
 }
 
@@ -361,17 +436,7 @@ onBeforeUnmount(() => {
       >
         <UIcon name="i-lucide-pencil" class="size-5" />
       </NuxtLink>
-      <template v-if="nativeShareAvailable">
-        <button
-          type="button"
-          class="card-cta-icon"
-          :title="t('action.share')"
-          @click="openShare"
-        >
-          <UIcon name="i-lucide-share-2" class="size-5" />
-        </button>
-      </template>
-      <UPopover v-else v-model:open="sharePopoverOpen" :popper="{ placement: 'top' }">
+      <UPopover v-model:open="sharePopoverOpen" :popper="{ placement: 'top' }">
         <button
           type="button"
           class="card-cta-icon"
@@ -381,63 +446,89 @@ onBeforeUnmount(() => {
           <UIcon name="i-lucide-share-2" class="size-5" />
         </button>
         <template #content>
-          <div class="p-3 min-w-[200px] bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg">
-            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">{{ t('action.shareVia') }}</p>
-            <div class="flex flex-col gap-1">
+          <div class="p-3 min-w-[220px] bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg flex flex-col gap-3">
+            <!-- Option 1 : Partager l'image de la carte (visuel) -->
+            <div>
+              <p class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">{{ t('share.cardImage') }}</p>
               <button
                 type="button"
-                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                @click="shareViaWhatsApp"
+                class="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="shareCardImage().then(() => { sharePopoverOpen = false; })"
               >
-                <UIcon name="i-simple-icons-whatsapp" class="size-5 text-[#25D366]" />
-                <span>WhatsApp</span>
+                <UIcon name="i-lucide-image" class="size-5" />
+                <span>{{ t('share.shareCardImage') }}</span>
               </button>
+            </div>
+            <!-- Option 2 : Partager le lien de la carte (enregistrer / rouvrir) -->
+            <div>
+              <p class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">{{ t('share.cardLink') }}</p>
+              <div class="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="shareViaWhatsApp"
+                >
+                  <UIcon name="i-simple-icons-whatsapp" class="size-5 text-[#25D366]" />
+                  <span>WhatsApp</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="shareViaTelegram"
+                >
+                  <UIcon name="i-simple-icons-telegram" class="size-5 text-[#26A5E4]" />
+                  <span>Telegram</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="shareViaTwitter"
+                >
+                  <UIcon name="i-simple-icons-x" class="size-5" />
+                  <span>X (Twitter)</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="shareViaLinkedIn"
+                >
+                  <UIcon name="i-simple-icons-linkedin" class="size-5 text-[#0A66C2]" />
+                  <span>LinkedIn</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="shareViaEmail"
+                >
+                  <UIcon name="i-lucide-mail" class="size-5" />
+                  <span>E-mail</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="shareViaCopyLink"
+                >
+                  <UIcon name="i-lucide-link" class="size-5" />
+                  <span>{{ t('action.copyLink') }}</span>
+                </button>
+              </div>
+            </div>
+            <!-- Lien employé : pour les RH qui envoient le lien à l'employé (ex. Marco) -->
+            <div v-if="isCreator" class="pt-2 border-t border-zinc-200 dark:border-zinc-700">
               <button
                 type="button"
                 class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                @click="shareViaTelegram"
+                @click="copyEmployeeLink(); sharePopoverOpen = false"
               >
-                <UIcon name="i-simple-icons-telegram" class="size-5 text-[#26A5E4]" />
-                <span>Telegram</span>
-              </button>
-              <button
-                type="button"
-                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                @click="shareViaTwitter"
-              >
-                <UIcon name="i-simple-icons-x" class="size-5" />
-                <span>X (Twitter)</span>
-              </button>
-              <button
-                type="button"
-                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                @click="shareViaLinkedIn"
-              >
-                <UIcon name="i-simple-icons-linkedin" class="size-5 text-[#0A66C2]" />
-                <span>LinkedIn</span>
-              </button>
-              <button
-                type="button"
-                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                @click="shareViaEmail"
-              >
-                <UIcon name="i-lucide-mail" class="size-5" />
-                <span>E-mail</span>
-              </button>
-              <button
-                type="button"
-                class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                @click="shareViaCopyLink"
-              >
-                <UIcon name="i-lucide-link" class="size-5" />
-                <span>{{ t('action.copyLink') }}</span>
+                <UIcon name="i-lucide-user-cog" class="size-5" />
+                <span>{{ t('share.copyEmployeeLink') }}</span>
               </button>
             </div>
           </div>
         </template>
       </UPopover>
-      <!-- QR code (créateur uniquement) : ouvrir la carte ou enregistrer le contact -->
-      <UPopover v-if="isCreator" :popper="{ placement: 'top' }">
+      <!-- QR code (tous : créateur, employé, visiteur) : partager un QR qui mène vers une page où l'on peut partager (lien/image), télécharger et partager à son tour via QR. -->
+      <UPopover :popper="{ placement: 'top' }">
         <button
           type="button"
           class="card-cta-icon"
