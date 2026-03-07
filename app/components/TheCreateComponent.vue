@@ -139,7 +139,9 @@ watch(
         <UInput v-model="newCard.mobile" type="tel" class="w-full" />
       </UFormField>
 
-      <a :href="`${url}`"> <UButton :label="t('create.viewCard')" /></a>
+      <a :href="`${url}${url.includes('?') ? '&' : '?'}owner=1`">
+        <UButton :label="t('create.viewCard')" />
+      </a>
     </UForm>
   </div>
 </template>

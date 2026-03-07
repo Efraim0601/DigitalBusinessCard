@@ -16,8 +16,9 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard } = defineProps<{
+const { urlCard, isCreator = false } = defineProps<{
   urlCard: Card;
+  isCreator?: boolean;
 }>();
 
 const { t } = useAppLocale();
@@ -346,9 +347,10 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Boutons d'action : appeler, enregistrer le contact, partager (vue visiteur qui a scanné) -->
+    <!-- Boutons d'action : créateur (éditer, partager, QR, télécharger, appeler, email) / visiteur (partager, QR, télécharger, appeler, email) -->
     <div class="card-cta-zone w-full max-w-2xl">
       <NuxtLink
+        v-if="isCreator"
         :to="editCardUrl"
         class="card-cta-icon"
         :title="t('action.edit')"
@@ -430,13 +432,39 @@ onBeforeUnmount(() => {
           </div>
         </template>
       </UPopover>
+      <!-- QR code (créateur uniquement) : ouvrir la carte ou enregistrer le contact -->
+      <UPopover v-if="isCreator" :popper="{ placement: 'top' }">
+        <button
+          type="button"
+          class="card-cta-icon"
+          :title="t('action.showQR')"
+        >
+          <UIcon name="i-lucide-qr-code" class="size-5" />
+        </button>
+        <template #content>
+          <div class="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg flex flex-col items-center gap-3">
+            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ t('action.scanQR') }}</p>
+            <div class="w-40 h-40 flex items-center justify-center bg-white p-2 rounded-lg">
+              <QRCode :url="url" :card="urlCard" />
+            </div>
+            <UButton
+              size="sm"
+              color="primary"
+              variant="soft"
+              :label="t('action.saveContact')"
+              icon="i-lucide-user-plus"
+              @click="qrRef?.downloadVCard()"
+            />
+          </div>
+        </template>
+      </UPopover>
       <button
         type="button"
         class="card-cta-icon"
-        :title="t('action.saveContact')"
-        @click="qrRef?.downloadVCard()"
+        :title="t('action.downloadCard')"
+        @click="downloadCardImage"
       >
-        <UIcon name="i-lucide-user-plus" class="size-5" />
+        <UIcon name="i-lucide-id-card" class="size-5" />
       </button>
       <a
         v-if="urlCard.phone && urlCard.phone !== ''"
