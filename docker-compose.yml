@@ -12,7 +12,7 @@ services:
     # Utilise le port 5433 sur la machine hôte pour éviter le conflit
     # avec un PostgreSQL déjà présent sur 5432.
     ports:
-      - "5433:5432"
+      - "5435:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -28,8 +28,9 @@ services:
       PGDATABASE: vcard
       PGUSER: vcard
       PGPASSWORD: vcard
+    # Le front est exposé sur le port 8765 de la machine hôte
     ports:
-      - "3000:3000"
+      - "8765:3000"
     depends_on:
       - db
 
