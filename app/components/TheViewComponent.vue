@@ -105,7 +105,8 @@ const sharePopoverOpen = ref(false);
 async function shareCardLink() {
   const title = shareTitle.value;
   const pageUrl = shareUrlShort.value || shareUrl.value;
-  const text = `${shareText.value}\n\n${pageUrl}`;
+  // On laisse le lien uniquement dans le champ url pour éviter les doublons dans certaines apps.
+  const text = shareText.value;
 
   if (typeof navigator !== "undefined" && navigator.share) {
     try {
