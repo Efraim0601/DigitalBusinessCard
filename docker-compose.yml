@@ -9,8 +9,10 @@ services:
       POSTGRES_DB: vcard
       POSTGRES_USER: vcard
       POSTGRES_PASSWORD: vcard
+    # Utilise le port 5433 sur la machine hôte pour éviter le conflit
+    # avec un PostgreSQL déjà présent sur 5432.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
