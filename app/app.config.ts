@@ -9,6 +9,10 @@ export default defineAppConfig({
     telex: "8907 KN",
     website: "www.afrilandfirstbank.com",
   },
+  admin: {
+    email: "admin@afrilandfirstbank.com",
+    password: "adminabf@afrilandfirstbank.com",
+  },
   // https://ui3.nuxt.dev/getting-started/theme#design-system
   ui: {
     colors: {

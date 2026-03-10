@@ -101,7 +101,7 @@ onMounted(() => {
             <tr>
               <th class="px-3 py-2 text-left font-semibold">Email</th>
               <th class="px-3 py-2 text-left font-semibold">Nom</th>
-              <th class="px-3 py-2 text-left font-semibold">Entreprise</th>
+              <th class="px-3 py-2 text-left font-semibold">Département</th>
               <th class="px-3 py-2 text-left font-semibold">Titre</th>
               <th class="px-3 py-2 text-right font-semibold">Actions</th>
             </tr>
@@ -157,7 +157,7 @@ onMounted(() => {
           <UFormField label="Nom">
             <UInput v-model="editing.last_name" />
           </UFormField>
-          <UFormField label="Entreprise">
+          <UFormField label="Département">
             <UInput v-model="editing.company" />
           </UFormField>
           <UFormField label="Titre / Poste">

@@ -9,6 +9,10 @@ declare module "nuxt/schema" {
       telex?: string;
       website?: string;
     };
+    admin?: {
+      email?: string;
+      password?: string;
+    };
   }
 }
 

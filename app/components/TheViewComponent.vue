@@ -323,6 +323,9 @@ onBeforeUnmount(() => {
             <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-sm font-bold text-[#333] mt-1 leading-[1.35] font-[Arial,Helvetica,sans-serif]">
               {{ urlCard.title }}
             </p>
+            <p v-if="urlCard.co && urlCard.co !== 'undefined'" class="text-xs font-medium text-[#2d2d2d] mt-0.5 leading-[1.4] font-[Arial,Helvetica,sans-serif]">
+              {{ urlCard.co }}
+            </p>
           </div>
 
           <!-- Contact -->
