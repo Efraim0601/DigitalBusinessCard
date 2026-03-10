@@ -132,10 +132,7 @@ watch(
           class="w-full"
         />
       </UFormField>
-      <UFormField :label="t('create.fax')" name="fax" class="w-full">
-        <UInput v-model="newCard.fax" type="tel" class="w-full" />
-      </UFormField>
-      <UFormField :label="t('create.mobile')" name="mobile" class="w-full">
+            <UFormField :label="t('create.mobile')" name="mobile" class="w-full">
         <UInput v-model="newCard.mobile" type="tel" class="w-full" />
       </UFormField>
 

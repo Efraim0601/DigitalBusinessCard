@@ -29,26 +29,26 @@ function go() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 px-3 sm:px-4 py-6">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-red-950 via-red-900 to-red-950 px-3 sm:px-4 py-6">
     <NuxtPwaManifest />
     <div class="w-full max-w-md">
-      <div class="rounded-3xl bg-[#021f16] border border-emerald-700/60 shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden">
+      <div class="rounded-3xl bg-[#2b0505] border border-red-700/60 shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden">
         <div class="px-6 pt-6 pb-4 flex flex-col items-center">
-          <div class="w-16 h-16 rounded-2xl bg-emerald-800 flex items-center justify-center mb-4">
-            <UIcon name="i-lucide-building-2" class="w-9 h-9 text-emerald-300" />
+          <div class="w-16 h-16 rounded-2xl bg-red-800 flex items-center justify-center mb-4">
+            <UIcon name="i-lucide-building-2" class="w-9 h-9 text-red-300" />
           </div>
           <h1 class="text-xl sm:text-2xl font-semibold text-white text-center">
             Afriland First Bank
           </h1>
-          <p class="text-xs sm:text-sm text-emerald-200/80 mt-1 text-center">
+          <p class="text-xs sm:text-sm text-red-200/80 mt-1 text-center">
             Digital Identity Portal
           </p>
 
-          <div class="w-full mt-6 rounded-2xl border border-emerald-700/60 bg-gradient-to-br from-emerald-900/70 to-emerald-800/40 p-4">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-300 mb-1">
+          <div class="w-full mt-6 rounded-2xl border border-red-700/60 bg-gradient-to-br from-red-900/70 to-red-800/40 p-4">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-red-300 mb-1">
               Employee Portal
             </p>
-            <p class="text-xs text-emerald-200/70">
+            <p class="text-xs text-red-200/70">
               Access your digital business card and share it securely.
             </p>
           </div>
@@ -57,7 +57,7 @@ function go() {
             <h2 class="text-sm font-semibold text-white">
               Welcome back
             </h2>
-            <p class="text-[11px] text-emerald-100/70 mt-1">
+            <p class="text-[11px] text-red-100/70 mt-1">
               Enter your corporate email to access your digital business card.
               HR can use the admin email with the admin password to manage all cards.
             </p>
@@ -97,7 +97,7 @@ function go() {
             <UIcon name="i-lucide-arrow-right" class="w-4 h-4" />
           </UButton>
 
-          <p class="mt-3 text-[10px] text-emerald-100/60 text-center leading-relaxed">
+          <p class="mt-3 text-[10px] text-red-100/60 text-center leading-relaxed">
             Secure access for authorized personnel only.
             © {{ new Date().getFullYear() }} Afriland First Bank Group.
           </p>

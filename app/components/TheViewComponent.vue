@@ -24,6 +24,7 @@ const { urlCard, isCreator = false, isEmployee = false } = defineProps<{
 
 const { t } = useAppLocale();
 const route = useRoute();
+const FIXED_FAX = "222 221 785";
 
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
 const publicUrl = computed(() => {
@@ -73,24 +74,16 @@ const shareTitle = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
   return name ? t("share.cardTitle", { name }) : t("share.cardTitleDefault");
 });
-const shareUrl = computed(() => publicUrl.value || url.value);
+const shareUrl = computed(() => {
+  if (typeof window === "undefined") return "";
+  // Lien partagé = page de login, pas la carte directe
+  return `${window.location.origin}/`;
+});
 
-/** URL courte pour partage (WhatsApp, etc.) : paramètres en base64, sans owner → le visiteur ne reçoit pas les droits créateur. */
+/** URL courte pour partage : ici on partage également la page de login. */
 function buildShortShareUrl(): string {
-  if (typeof window === "undefined") return publicUrl.value || "";
-  const params = new URLSearchParams(route.query as Record<string, string>);
-  params.delete("owner");
-  params.delete("employee");
-  const search = params.toString();
-  if (!search) return `${window.location.origin}${route.path}`;
-  try {
-    const encoded = btoa(encodeURIComponent(search))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-    return `${window.location.origin}${route.path}?s=${encoded}`;
-  } catch {
-    return publicUrl.value || "";
-  }
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/`;
 }
 const shareUrlShort = computed(() => buildShortShareUrl());
 
@@ -286,7 +279,7 @@ onBeforeUnmount(() => {
   <div class="flex flex-col items-center w-full gap-4 px-1 sm:px-0 touch-manipulation">
     <!-- QR code masqué : gardé en DOM pour downloadVCard (enregistrer le contact), le visiteur qui a scanné ne le voit pas -->
     <div class="absolute -left-[9999px] w-48 h-48 opacity-0 pointer-events-none overflow-hidden">
-      <QRCode ref="qrRef" :url="publicUrl || url" :card="urlCard" />
+      <QRCode ref="qrRef" :url="publicUrl || url" :card="{ ...urlCard, fax: FIXED_FAX }" />
     </div>
 
     <!-- Carte de visite : format fixe + scale (pas de responsive layout) -->
@@ -365,10 +358,10 @@ onBeforeUnmount(() => {
                     <a :href="`tel:${urlCard.phone}`" class="text-[#222] hover:underline">{{ urlCard.phone }}</a>
                   </td>
                 </tr>
-                <tr v-if="urlCard.fax && urlCard.fax !== ''">
+                <tr>
                   <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.fax') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
-                    <a :href="`tel:${urlCard.fax}`" class="text-[#222] hover:underline">{{ urlCard.fax }}</a>
+                    <a href="tel:222221785" class="text-[#222] hover:underline">{{ FIXED_FAX }}</a>
                   </td>
                 </tr>
                 <tr v-if="urlCard.mobile && urlCard.mobile !== ''">
@@ -467,7 +460,7 @@ onBeforeUnmount(() => {
           <div class="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg flex flex-col items-center gap-3">
             <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ t('action.scanQR') }}</p>
             <div class="w-40 h-40 flex items-center justify-center bg-white p-2 rounded-lg">
-              <QRCode :url="publicUrl || url" :card="urlCard" />
+              <QRCode :url="publicUrl || url" :card="{ ...urlCard, fax: FIXED_FAX }" />
             </div>
             <UButton
               size="sm"
