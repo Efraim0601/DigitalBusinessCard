@@ -82,6 +82,23 @@ ghcr.io/kyaustad/cardyo:latest
 
 IF ANYONE WITH AN UNRAID CA REPO WANTS TO HOST THIS PLEASE DO! Let me know but I'd love to have it on the community apps.
 
+## Base de données (admin cartes, directions, titres)
+
+Si vous utilisez la page **Admin** (gestion des cartes, directions, titres/postes), une base PostgreSQL est requise. Les tables `departments` et `job_titles` doivent être créées via la migration :
+
+```bash
+# Exemple (ajuster utilisateur, base, chemin)
+psql -U vcard -d vcard -f sql/migration_departments_job_titles.sql
+```
+
+Avec Docker (remplacer `nom_conteneur_postgres` par le nom de votre conteneur PostgreSQL) :
+
+```bash
+docker exec -i nom_conteneur_postgres psql -U vcard -d vcard < sql/migration_departments_job_titles.sql
+```
+
+Sans cette migration, les boutons « Enregistrer » des onglets **Directions** et **Titres / Postes** renverront une erreur (table absente).
+
 ## 🛠️ Tech Stack  
 
 - **Nuxt.js** (Vue 3 & Vite)  

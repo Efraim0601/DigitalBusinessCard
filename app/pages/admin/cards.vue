@@ -196,7 +196,7 @@ async function saveDepartment() {
     departmentForm.value = null;
     await loadDepartments();
   } catch (e) {
-    departmentSaveError.value = (e as Error)?.message || t("admin.loadError");
+    departmentSaveError.value = (e as any)?.data?.error || (e as Error)?.message || t("admin.loadError");
     console.error(e);
   }
 }
@@ -243,7 +243,7 @@ async function saveJobTitle() {
     jobTitleForm.value = null;
     await loadJobTitles();
   } catch (e) {
-    jobTitleSaveError.value = (e as Error)?.message || t("admin.loadError");
+    jobTitleSaveError.value = (e as any)?.data?.error || (e as Error)?.message || t("admin.loadError");
     console.error(e);
   }
 }
