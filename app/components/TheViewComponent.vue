@@ -361,6 +361,12 @@ onBeforeUnmount(() => {
             </div>
             <div class="text-[11px] text-[#222] text-right font-[Arial,Helvetica,sans-serif]">
               <table class="border-collapse">
+                <tr v-if="urlCard.mobile && urlCard.mobile !== ''">
+                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.mobile') }}</td>
+                  <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
+                    <a :href="`tel:${urlCard.mobile}`" class="text-[#222] hover:underline">{{ urlCard.mobile }}</a>
+                  </td>
+                </tr>
                 <tr v-if="urlCard.phone && urlCard.phone !== ''">
                   <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.phone') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
@@ -371,12 +377,6 @@ onBeforeUnmount(() => {
                   <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.fax') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
                     <a href="tel:222221785" class="text-[#222] hover:underline">{{ FIXED_FAX }}</a>
-                  </td>
-                </tr>
-                <tr v-if="urlCard.mobile && urlCard.mobile !== ''">
-                  <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.mobile') }}</td>
-                  <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
-                    <a :href="`tel:${urlCard.mobile}`" class="text-[#222] hover:underline">{{ urlCard.mobile }}</a>
                   </td>
                 </tr>
               </table>
