@@ -12,6 +12,9 @@ const editing = ref<any | null>(null);
 // Directions: formulaire d'ajout / édition
 const departmentForm = ref<{ id: string | null; label_fr: string; label_en: string } | null>(null);
 const jobTitleForm = ref<{ id: string | null; label_fr: string; label_en: string } | null>(null);
+const departmentSaveError = ref<string | null>(null);
+const jobTitleSaveError = ref<string | null>(null);
+const OTHER_VALUE = "__other__";
 
 async function loadCards() {
   loading.value = true;
@@ -68,52 +71,45 @@ function startEdit(card: any) {
   };
 }
 
-// Un seul champ par concept : saisie libre ou choix dans la liste (suggestions)
-const departmentDisplay = computed({
+// Select Département : valeur = id ou __other__ ou "" ; si Autre, on affiche le champ texte company
+const departmentSelectValue = computed({
   get: () => {
     if (!editing.value) return "";
-    if (editing.value.department_id) {
-      const d = departments.value.find((x) => x.id === editing.value!.department_id);
-      return d?.label_fr ?? editing.value.company ?? "";
-    }
-    return editing.value.company ?? "";
+    if (editing.value.department_id) return editing.value.department_id;
+    if (editing.value.company) return OTHER_VALUE;
+    return "";
   },
-  set: (val: string) => {
+  set: (v: string) => {
     if (!editing.value) return;
-    const trimmed = (val ?? "").trim();
-    const found = departments.value.find((d) => d.label_fr === trimmed);
-    if (found) {
-      editing.value.department_id = found.id;
-      editing.value.company = null;
-    } else {
-      editing.value.department_id = null;
-      editing.value.company = trimmed || null;
-    }
+    editing.value.department_id = v && v !== OTHER_VALUE ? v : null;
+    if (v !== OTHER_VALUE) editing.value.company = null;
   },
 });
+const departmentOptions = computed(() => [
+  { value: "", label: "— " + t("admin.department") + " —" },
+  ...departments.value.map((d) => ({ value: d.id, label: d.label_fr })),
+  { value: OTHER_VALUE, label: t("admin.otherFree") },
+]);
 
-const jobTitleDisplay = computed({
+// Select Titre / Poste : id ou __other__ ou "" ; si Autre, champ texte title
+const jobTitleSelectValue = computed({
   get: () => {
     if (!editing.value) return "";
-    if (editing.value.job_title_id) {
-      const j = jobTitles.value.find((x) => x.id === editing.value!.job_title_id);
-      return j?.label_fr ?? editing.value.title ?? "";
-    }
-    return editing.value.title ?? "";
+    if (editing.value.job_title_id) return editing.value.job_title_id;
+    if (editing.value.title) return OTHER_VALUE;
+    return "";
   },
-  set: (val: string) => {
+  set: (v: string) => {
     if (!editing.value) return;
-    const trimmed = (val ?? "").trim();
-    const found = jobTitles.value.find((j) => j.label_fr === trimmed);
-    if (found) {
-      editing.value.job_title_id = found.id;
-      editing.value.title = null;
-    } else {
-      editing.value.job_title_id = null;
-      editing.value.title = trimmed || null;
-    }
+    editing.value.job_title_id = v && v !== OTHER_VALUE ? v : null;
+    if (v !== OTHER_VALUE) editing.value.title = null;
   },
 });
+const jobTitleOptions = computed(() => [
+  { value: "", label: "— " + t("admin.titleField") + " —" },
+  ...jobTitles.value.map((j) => ({ value: j.id, label: j.label_fr })),
+  { value: OTHER_VALUE, label: t("admin.otherFree") },
+]);
 
 async function saveCard() {
   if (!editing.value) return;
@@ -178,9 +174,13 @@ function openEditDepartment(d: { id: string; label_fr: string; label_en: string 
 }
 
 async function saveDepartment() {
+  departmentSaveError.value = null;
   if (!departmentForm.value) return;
   const { id, label_fr, label_en } = departmentForm.value;
-  if (!label_fr?.trim() || !label_en?.trim()) return;
+  if (!label_fr?.trim() || !label_en?.trim()) {
+    departmentSaveError.value = t("admin.labelFr") + " / " + t("admin.labelEn") + " requis.";
+    return;
+  }
   try {
     if (id) {
       await $fetch(`/api/departments/${id}`, {
@@ -196,6 +196,7 @@ async function saveDepartment() {
     departmentForm.value = null;
     await loadDepartments();
   } catch (e) {
+    departmentSaveError.value = (e as Error)?.message || t("admin.loadError");
     console.error(e);
   }
 }
@@ -220,9 +221,13 @@ function openEditJobTitle(j: { id: string; label_fr: string; label_en: string })
 }
 
 async function saveJobTitle() {
+  jobTitleSaveError.value = null;
   if (!jobTitleForm.value) return;
   const { id, label_fr, label_en } = jobTitleForm.value;
-  if (!label_fr?.trim() || !label_en?.trim()) return;
+  if (!label_fr?.trim() || !label_en?.trim()) {
+    jobTitleSaveError.value = t("admin.labelFr") + " / " + t("admin.labelEn") + " requis.";
+    return;
+  }
   try {
     if (id) {
       await $fetch(`/api/job-titles/${id}`, {
@@ -238,6 +243,7 @@ async function saveJobTitle() {
     jobTitleForm.value = null;
     await loadJobTitles();
   } catch (e) {
+    jobTitleSaveError.value = (e as Error)?.message || t("admin.loadError");
     console.error(e);
   }
 }
@@ -365,31 +371,31 @@ onMounted(() => {
             </UFormField>
 
             <UFormField :label="t('admin.department')">
-              <UInput
-                v-model="departmentDisplay"
-                type="text"
-                autocomplete="off"
-                :placeholder="t('admin.department')"
-                class="w-full"
-                :list="'dept-list-' + (editing.id ?? 'new')"
-              />
-              <datalist :id="'dept-list-' + (editing.id ?? 'new')">
-                <option v-for="d in departments" :key="d.id" :value="d.label_fr" />
-              </datalist>
+              <select
+                v-model="departmentSelectValue"
+                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+              >
+                <option v-for="opt in departmentOptions" :key="String(opt.value)" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </UFormField>
+            <UFormField v-if="departmentSelectValue === OTHER_VALUE" :label="t('admin.department') + ' (saisie libre)'">
+              <UInput v-model="editing.company" :placeholder="t('admin.otherFree')" />
             </UFormField>
 
             <UFormField :label="t('admin.titleField')">
-              <UInput
-                v-model="jobTitleDisplay"
-                type="text"
-                autocomplete="off"
-                :placeholder="t('admin.titleField')"
-                class="w-full"
-                :list="'job-list-' + (editing.id ?? 'new')"
-              />
-              <datalist :id="'job-list-' + (editing.id ?? 'new')">
-                <option v-for="j in jobTitles" :key="j.id" :value="j.label_fr" />
-              </datalist>
+              <select
+                v-model="jobTitleSelectValue"
+                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+              >
+                <option v-for="opt in jobTitleOptions" :key="String(opt.value)" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </UFormField>
+            <UFormField v-if="jobTitleSelectValue === OTHER_VALUE" :label="t('admin.titleField') + ' (saisie libre)'">
+              <UInput v-model="editing.title" :placeholder="t('admin.otherFree')" />
             </UFormField>
 
             <UFormField :label="t('admin.phone')">
@@ -426,6 +432,7 @@ onMounted(() => {
           {{ t("admin.addDepartment") }}
         </UButton>
       </div>
+      <p v-if="departmentSaveError" class="mb-3 text-sm text-red-500">{{ departmentSaveError }}</p>
       <div v-if="departmentForm" class="border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 p-4 mb-4 max-w-md">
         <UFormField :label="t('admin.labelFr')">
           <UInput v-model="departmentForm.label_fr" />
@@ -434,8 +441,8 @@ onMounted(() => {
           <UInput v-model="departmentForm.label_en" />
         </UFormField>
         <div class="flex gap-2 mt-3">
-          <UButton color="primary" size="sm" @click="saveDepartment">{{ t("admin.save") }}</UButton>
-          <UButton variant="ghost" size="sm" @click="departmentForm = null">{{ t("admin.cancel") }}</UButton>
+          <UButton type="button" color="primary" size="sm" @click="saveDepartment">{{ t("admin.save") }}</UButton>
+          <UButton type="button" variant="ghost" size="sm" @click="departmentForm = null; departmentSaveError = null">{{ t("admin.cancel") }}</UButton>
         </div>
       </div>
       <div class="overflow-x-auto border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900">
@@ -475,6 +482,7 @@ onMounted(() => {
           {{ t("admin.addJobTitle") }}
         </UButton>
       </div>
+      <p v-if="jobTitleSaveError" class="mb-3 text-sm text-red-500">{{ jobTitleSaveError }}</p>
       <div v-if="jobTitleForm" class="border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 p-4 mb-4 max-w-md">
         <UFormField :label="t('admin.labelFr')">
           <UInput v-model="jobTitleForm.label_fr" />
@@ -483,8 +491,8 @@ onMounted(() => {
           <UInput v-model="jobTitleForm.label_en" />
         </UFormField>
         <div class="flex gap-2 mt-3">
-          <UButton color="primary" size="sm" @click="saveJobTitle">{{ t("admin.save") }}</UButton>
-          <UButton variant="ghost" size="sm" @click="jobTitleForm = null">{{ t("admin.cancel") }}</UButton>
+          <UButton type="button" color="primary" size="sm" @click="saveJobTitle">{{ t("admin.save") }}</UButton>
+          <UButton type="button" variant="ghost" size="sm" @click="jobTitleForm = null; jobTitleSaveError = null">{{ t("admin.cancel") }}</UButton>
         </div>
       </div>
       <div class="overflow-x-auto border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900">
