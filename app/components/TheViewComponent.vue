@@ -126,6 +126,28 @@ async function shareCardLink() {
   await copyLink();
 }
 
+/** Attend le chargement de l’image de fond de la carte (logo) avant capture. */
+function waitForBackgroundImage(url: string | undefined): Promise<void> {
+  if (!url?.trim()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      // Laisser le navigateur peindre le fond avant la capture
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    };
+    img.onerror = () => resolve();
+    img.src = url;
+    if (img.complete) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    }
+  });
+}
+
 function waitForImages(el: HTMLElement): Promise<void> {
   const imgs = el.querySelectorAll("img");
   if (imgs.length === 0) return Promise.resolve();
@@ -150,6 +172,8 @@ async function downloadCardImage() {
   const el = cardContentRef.value;
   if (!el) return;
   try {
+    await waitForBackgroundImage(company.value?.cardBackground);
+    await nextTick();
     await waitForImages(el);
     const dataUrl = await toPng(el, {
       cacheBust: true,
@@ -191,6 +215,8 @@ async function shareCardImage() {
   const el = cardContentRef.value;
   if (!el) return;
   try {
+    await waitForBackgroundImage(company.value?.cardBackground);
+    await nextTick();
     await waitForImages(el);
     const dataUrl = await toPng(el, {
       cacheBust: true,
