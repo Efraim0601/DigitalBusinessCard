@@ -4,19 +4,16 @@ const appConfig = useAppConfig();
 const { t } = useAppLocale();
 
 const email = ref("");
-const password = ref("");
 
 const adminEmail = computed(() => appConfig.admin?.email?.toLowerCase() ?? "");
-const adminPassword = computed(() => appConfig.admin?.password ?? "adminabf@afrilandfirstbank.com");
 
 function go() {
   const trimmedEmail = email.value.trim();
-  const trimmedPassword = password.value.trim();
   if (!trimmedEmail) return;
 
   const lowerEmail = trimmedEmail.toLowerCase();
 
-  if (trimmedPassword === adminPassword.value && adminEmail.value && lowerEmail === adminEmail.value) {
+  if (adminEmail.value && lowerEmail === adminEmail.value) {
     router.push("/admin/cards");
     return;
   }
@@ -59,7 +56,7 @@ function go() {
             </h2>
             <p class="text-[11px] text-slate-500 mt-1">
               Enter your corporate email to access your digital business card.
-              HR can use the admin email with the admin password to manage all cards.
+              HR can use the admin email to manage all cards.
             </p>
           </div>
         </div>
@@ -75,16 +72,6 @@ function go() {
               class="w-full"
               autocomplete="email"
               placeholder="e.g. name@afrilandfirstbank.com"
-            />
-          </UFormField>
-
-          <UFormField label="Password" name="password" class="w-full">
-            <UInput
-              v-model="password"
-              type="password"
-              class="w-full"
-              autocomplete="current-password"
-              placeholder="••••••••••"
             />
           </UFormField>
 
