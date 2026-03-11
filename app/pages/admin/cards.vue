@@ -13,8 +13,6 @@ const editing = ref<any | null>(null);
 const departmentForm = ref<{ id: string | null; label_fr: string; label_en: string } | null>(null);
 const jobTitleForm = ref<{ id: string | null; label_fr: string; label_en: string } | null>(null);
 
-const OTHER_VALUE = "__other__";
-
 async function loadCards() {
   loading.value = true;
   error.value = null;
@@ -22,7 +20,7 @@ async function loadCards() {
     const res = await $fetch("/api/cards");
     cards.value = Array.isArray(res) ? res : [];
   } catch (e) {
-    error.value = (e as Error).message;
+    error.value = t("admin.loadError");
   } finally {
     loading.value = false;
   }
@@ -70,33 +68,52 @@ function startEdit(card: any) {
   };
 }
 
-const departmentSelectValue = computed({
-  get: () => (editing.value?.department_id ? editing.value.department_id : OTHER_VALUE),
-  set: (v: string) => {
+// Un seul champ par concept : saisie libre ou choix dans la liste (suggestions)
+const departmentDisplay = computed({
+  get: () => {
+    if (!editing.value) return "";
+    if (editing.value.department_id) {
+      const d = departments.value.find((x) => x.id === editing.value!.department_id);
+      return d?.label_fr ?? editing.value.company ?? "";
+    }
+    return editing.value.company ?? "";
+  },
+  set: (val: string) => {
     if (!editing.value) return;
-    editing.value.department_id = v === OTHER_VALUE ? null : v;
-    if (v !== OTHER_VALUE) editing.value.company = "";
+    const trimmed = (val ?? "").trim();
+    const found = departments.value.find((d) => d.label_fr === trimmed);
+    if (found) {
+      editing.value.department_id = found.id;
+      editing.value.company = null;
+    } else {
+      editing.value.department_id = null;
+      editing.value.company = trimmed || null;
+    }
   },
 });
 
-const jobTitleSelectValue = computed({
-  get: () => (editing.value?.job_title_id ? editing.value.job_title_id : OTHER_VALUE),
-  set: (v: string) => {
+const jobTitleDisplay = computed({
+  get: () => {
+    if (!editing.value) return "";
+    if (editing.value.job_title_id) {
+      const j = jobTitles.value.find((x) => x.id === editing.value!.job_title_id);
+      return j?.label_fr ?? editing.value.title ?? "";
+    }
+    return editing.value.title ?? "";
+  },
+  set: (val: string) => {
     if (!editing.value) return;
-    editing.value.job_title_id = v === OTHER_VALUE ? null : v;
-    if (v !== OTHER_VALUE) editing.value.title = "";
+    const trimmed = (val ?? "").trim();
+    const found = jobTitles.value.find((j) => j.label_fr === trimmed);
+    if (found) {
+      editing.value.job_title_id = found.id;
+      editing.value.title = null;
+    } else {
+      editing.value.job_title_id = null;
+      editing.value.title = trimmed || null;
+    }
   },
 });
-
-const departmentOptions = computed(() => [
-  ...departments.value.map((d) => ({ value: d.id, label: d.label_fr })),
-  { value: OTHER_VALUE, label: t("admin.otherFree") },
-]);
-
-const jobTitleOptions = computed(() => [
-  ...jobTitles.value.map((j) => ({ value: j.id, label: j.label_fr })),
-  { value: OTHER_VALUE, label: t("admin.otherFree") },
-]);
 
 async function saveCard() {
   if (!editing.value) return;
@@ -275,16 +292,16 @@ onMounted(() => {
 
     <!-- Onglet Cartes -->
     <template v-if="activeTab === 'cards'">
-      <div class="mb-4 flex items-center gap-3">
-        <UButton color="primary" variant="soft" @click="startCreate">
+      <div class="mb-4 flex flex-wrap items-center gap-3">
+        <UButton color="primary" variant="soft" size="md" @click="startCreate">
           {{ t("admin.createCard") }}
         </UButton>
         <span v-if="loading" class="text-sm text-zinc-500">{{ t("admin.loading") }}</span>
-        <span v-if="error" class="text-sm text-red-500">{{ error }}</span>
+        <p v-if="error" class="text-sm text-red-500">{{ error }}</p>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-[2fr,1.2fr] gap-6">
-        <div class="overflow-x-auto border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900">
+        <div class="overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 shadow-sm">
           <table class="min-w-full text-sm">
             <thead class="bg-zinc-50 dark:bg-zinc-800">
               <tr>
@@ -319,16 +336,16 @@ onMounted(() => {
                   </UButton>
                 </td>
               </tr>
-              <tr v-if="!loading && cards.length === 0">
-                <td colspan="5" class="px-3 py-4 text-center text-sm text-zinc-500">
-                  {{ t("admin.noCards") }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+<tr v-if="!loading && cards.length === 0">
+              <td colspan="5" class="px-3 py-8 text-center text-sm text-zinc-500">
+                {{ t("admin.noCards") }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <div class="border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 p-4 space-y-3">
+        <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
           <h2 class="text-lg font-semibold mb-1">
             {{ editing?.id ? t("admin.editCard") : t("admin.createCardForm") }}
           </h2>
@@ -348,31 +365,31 @@ onMounted(() => {
             </UFormField>
 
             <UFormField :label="t('admin.department')">
-              <select
-                v-model="departmentSelectValue"
-                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
-              >
-                <option v-for="opt in departmentOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </UFormField>
-            <UFormField v-if="!editing.department_id" :label="t('admin.department') + ' (saisie libre)'">
-              <UInput v-model="editing.company" :placeholder="t('admin.otherFree')" />
+              <UInput
+                v-model="departmentDisplay"
+                type="text"
+                autocomplete="off"
+                :placeholder="t('admin.department')"
+                class="w-full"
+                :list="'dept-list-' + (editing.id ?? 'new')"
+              />
+              <datalist :id="'dept-list-' + (editing.id ?? 'new')">
+                <option v-for="d in departments" :key="d.id" :value="d.label_fr" />
+              </datalist>
             </UFormField>
 
             <UFormField :label="t('admin.titleField')">
-              <select
-                v-model="jobTitleSelectValue"
-                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
-              >
-                <option v-for="opt in jobTitleOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </UFormField>
-            <UFormField v-if="!editing.job_title_id" :label="t('admin.titleField') + ' (saisie libre)'">
-              <UInput v-model="editing.title" :placeholder="t('admin.otherFree')" />
+              <UInput
+                v-model="jobTitleDisplay"
+                type="text"
+                autocomplete="off"
+                :placeholder="t('admin.titleField')"
+                class="w-full"
+                :list="'job-list-' + (editing.id ?? 'new')"
+              />
+              <datalist :id="'job-list-' + (editing.id ?? 'new')">
+                <option v-for="j in jobTitles" :key="j.id" :value="j.label_fr" />
+              </datalist>
             </UFormField>
 
             <UFormField :label="t('admin.phone')">
