@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
     phone?: string;
     fax?: string;
     mobile?: string;
+    department_id?: string | null;
+    job_title_id?: string | null;
   }>(event);
 
   if (!body.email) {
@@ -26,12 +28,14 @@ export default defineEventHandler(async (event) => {
     body.phone ?? null,
     body.fax ?? null,
     body.mobile ?? null,
+    body.department_id ?? null,
+    body.job_title_id ?? null,
   ];
 
   const { rows } = await query(
     `
-    INSERT INTO cards (email, first_name, last_name, company, title, phone, fax, mobile)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+    INSERT INTO cards (email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
     ON CONFLICT (email) DO UPDATE
       SET first_name = EXCLUDED.first_name,
           last_name = EXCLUDED.last_name,
@@ -40,8 +44,10 @@ export default defineEventHandler(async (event) => {
           phone = EXCLUDED.phone,
           fax = EXCLUDED.fax,
           mobile = EXCLUDED.mobile,
+          department_id = EXCLUDED.department_id,
+          job_title_id = EXCLUDED.job_title_id,
           updated_at = now()
-    RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, created_at, updated_at
+    RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, created_at, updated_at
   `,
     params
   );

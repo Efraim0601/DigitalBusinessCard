@@ -15,6 +15,8 @@ export default defineEventHandler(async (event) => {
     phone?: string;
     fax?: string;
     mobile?: string;
+    department_id?: string | null;
+    job_title_id?: string | null;
   }>(event);
 
   const fields: string[] = [];
@@ -29,6 +31,8 @@ export default defineEventHandler(async (event) => {
     phone: "phone",
     fax: "fax",
     mobile: "mobile",
+    department_id: "department_id",
+    job_title_id: "job_title_id",
   })) {
     if (body[key as keyof typeof body] !== undefined) {
       fields.push(`${column} = $${idx}`);
@@ -49,7 +53,7 @@ export default defineEventHandler(async (event) => {
     UPDATE cards
     SET ${fields.join(", ")}, updated_at = now()
     WHERE id = $${idx}
-    RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, created_at, updated_at
+    RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, created_at, updated_at
   `,
     values
   );
