@@ -47,3 +47,10 @@ SELECT * FROM (VALUES
   ('Chargé de mission', 'Project Officer')
 ) AS v(label_fr, label_en)
 WHERE NOT EXISTS (SELECT 1 FROM job_titles LIMIT 1);
+
+-- Cartes de démonstration (ignorées si l’email existe déjà)
+INSERT INTO cards (email, first_name, last_name, company, title, phone, mobile)
+VALUES
+  ('demo@afrilandfirstbank.com', 'Jean', 'Dupont', 'Direction des Risques', 'Ingénieur d''étude', '222 221 700', '690 000 000'),
+  ('contact@afrilandfirstbank.com', 'Marie', 'Martin', 'Ressources Humaines', 'Responsable', '222 221 701', '690 000 001')
+ON CONFLICT (email) DO NOTHING;
