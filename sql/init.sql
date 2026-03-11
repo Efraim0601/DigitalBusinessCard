@@ -1,5 +1,19 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+CREATE TABLE IF NOT EXISTS departments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  label_fr TEXT NOT NULL,
+  label_en TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS job_titles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  label_fr TEXT NOT NULL,
+  label_en TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS cards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
@@ -10,6 +24,8 @@ CREATE TABLE IF NOT EXISTS cards (
   phone TEXT,
   fax TEXT,
   mobile TEXT,
+  department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  job_title_id UUID REFERENCES job_titles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
