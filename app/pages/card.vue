@@ -23,6 +23,8 @@ async function loadCardByEmail() {
       phone: string | null;
       fax: string | null;
       mobile: string | null;
+      department?: { label_fr: string; label_en: string } | null;
+      job_title?: { label_fr: string; label_en: string } | null;
     }>("/api/cards", {
       query: { email: email.value },
     });
@@ -36,6 +38,8 @@ async function loadCardByEmail() {
       phone: res.phone ?? "",
       fax: res.fax ?? "",
       mobile: res.mobile ?? "",
+      department: res.department ?? undefined,
+      job_title: res.job_title ?? undefined,
     };
   } catch (e) {
     error.value = (e as any)?.statusCode === 404 ? t("card.notFound") : (e as Error).message;

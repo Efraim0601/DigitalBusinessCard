@@ -2,6 +2,7 @@
 import type { Card } from "~~/types/card";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import { toPng } from "html-to-image";
+import { translateCardTitle, translateCardDepartment } from "~/locales/card-value-translations";
 
 const url = ref("waiting");
 const appConfig = useAppConfig();
@@ -22,7 +23,15 @@ const { urlCard, isCreator = false, isEmployee = false } = defineProps<{
   isEmployee?: boolean;
 }>();
 
-const { t } = useAppLocale();
+const { t, locale } = useAppLocale();
+const displayedTitle = computed(() => {
+  if (urlCard.job_title) return locale.value === "en" ? urlCard.job_title!.label_en : urlCard.job_title!.label_fr;
+  return translateCardTitle(urlCard.title, locale.value);
+});
+const displayedDepartment = computed(() => {
+  if (urlCard.department) return locale.value === "en" ? urlCard.department!.label_en : urlCard.department!.label_fr;
+  return translateCardDepartment(urlCard.co, locale.value);
+});
 const route = useRoute();
 const FIXED_FAX = "222 221 785";
 
@@ -313,11 +322,11 @@ onBeforeUnmount(() => {
             <h1 v-if="urlCard.fName || urlCard.lName" class="text-[20px] font-bold text-[#1a1a2e] leading-tight font-[Arial,Helvetica,sans-serif]">
               {{ [urlCard.fName, urlCard.lName].filter(Boolean).join(" ") }}
             </h1>
-            <p v-if="urlCard.title && urlCard.title !== 'undefined'" class="text-sm font-bold text-[#333] mt-1 leading-[1.35] font-[Arial,Helvetica,sans-serif]">
-              {{ urlCard.title }}
+            <p v-if="displayedTitle" class="text-sm font-bold text-[#333] mt-1 leading-[1.35] font-[Arial,Helvetica,sans-serif]">
+              {{ displayedTitle }}
             </p>
-            <p v-if="urlCard.co && urlCard.co !== 'undefined'" class="text-xs font-medium text-[#2d2d2d] mt-0.5 leading-[1.4] font-[Arial,Helvetica,sans-serif]">
-              {{ urlCard.co }}
+            <p v-if="displayedDepartment" class="text-xs font-medium text-[#2d2d2d] mt-0.5 leading-[1.4] font-[Arial,Helvetica,sans-serif]">
+              {{ displayedDepartment }}
             </p>
           </div>
 
