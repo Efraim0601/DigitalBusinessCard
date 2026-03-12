@@ -275,6 +275,34 @@ async function copyLink() {
   }
 }
 
+/** Partager le QR code qui mène vers la carte (même URL que le lien partagé). */
+async function shareQRCode() {
+  const getQR = (qrRef.value as { getQRAsFile?: () => Promise<File | null> } | null)?.getQRAsFile;
+  if (!getQR) return;
+  const file = await getQR();
+  if (!file) return;
+  try {
+    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: shareTitle.value,
+        text: shareText.value,
+        files: [file],
+      });
+    } else {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = file.name;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 100);
+    }
+  } catch (e) {
+    if ((e as Error)?.name !== "AbortError") console.error("Share QR code:", e);
+  }
+}
+
 async function copyEmployeeLink() {
   const linkToCopy = employeeLink.value;
   if (!linkToCopy) return;
@@ -461,10 +489,10 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  @click="copyLink(); sharePopoverOpen = false"
+                  @click="shareQRCode().then(() => { sharePopoverOpen = false; })"
                 >
-                  <UIcon name="i-lucide-link" class="size-5" />
-                  <span>{{ t('action.copyLink') }}</span>
+                  <UIcon name="i-lucide-qr-code" class="size-5" />
+                  <span>{{ t('share.shareQRCode') }}</span>
                 </button>
               </div>
             </div>

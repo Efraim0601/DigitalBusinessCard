@@ -13,29 +13,59 @@ const { copy } = useClipboard({
   legacy: true,
 });
 
+/** Retourne le QR code (vers l’URL de la carte) sous forme de fichier PNG pour partage. */
+const getQRAsFile = (): Promise<File | null> => {
+  return new Promise((resolve) => {
+    const svg = document.getElementById("QRcode") as SVGSVGElement | null;
+    if (!svg) {
+      resolve(null);
+      return;
+    }
+    const serializer = new XMLSerializer();
+    let svgStr = serializer.serializeToString(svg);
+    svgStr = svgStr.replace(/var\(--ui-text-highlighted\)/g, "white");
+    const svgBlob = new Blob([svgStr], { type: "image/svg+xml" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(svgUrl);
+          resolve(blob ? new File([blob], "qr-code-carte.png", { type: "image/png" }) : null);
+        },
+        "image/png",
+        1
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+      resolve(null);
+    };
+    img.src = svgUrl;
+  });
+};
+
 const downloadSVG = () => {
   const svg = document.getElementById("QRcode") as HTMLElement;
-  console.log(svg);
+  if (!svg) return;
   const serializer = new XMLSerializer();
   let svgStr = serializer.serializeToString(svg);
-
   svgStr = svgStr.replace(/var\(--ui-text-highlighted\)/g, "white");
-
   const svgBlob = new Blob([svgStr], { type: "image/svg+xml" });
   const svgUrl = URL.createObjectURL(svgBlob);
-
   const img = new Image();
-
   img.onload = () => {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext("2d");
-
     ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-
     const pngUrl = canvas.toDataURL("image/webp");
-
     const link = document.createElement("a");
     link.href = pngUrl;
     link.download = "qr-code.webp";
@@ -100,6 +130,7 @@ defineExpose({
   downloadSVG,
   copyToClipboard,
   downloadVCard,
+  getQRAsFile,
 });
 </script>
 
