@@ -1,7 +1,5 @@
 <script lang="ts" setup>
 import type { Card } from "~~/types/card";
-import type { DropdownMenuItem } from "@nuxt/ui";
-import { toPng } from "html-to-image";
 import { translateCardTitle, translateCardDepartment } from "~/locales/card-value-translations";
 
 const url = ref("waiting");
@@ -58,6 +56,12 @@ const company = computed(() => appConfig.company ?? {
   telex: "8907 KN",
   website: "www.afrilandfirstbank.com",
 });
+
+useHead(() => ({
+  link: company.value?.cardBackground
+    ? [{ rel: "preload", as: "image", href: company.value.cardBackground }]
+    : [],
+}));
 
 const websiteUrl = computed(() => {
   const w = company.value?.website ?? "";
@@ -175,6 +179,7 @@ async function downloadCardImage() {
     await waitForBackgroundImage(company.value?.cardBackground);
     await nextTick();
     await waitForImages(el);
+    const { toPng } = await import("html-to-image");
     const dataUrl = await toPng(el, {
       cacheBust: true,
       backgroundColor: "#ffffff",
@@ -218,6 +223,7 @@ async function shareCardImage() {
     await waitForBackgroundImage(company.value?.cardBackground);
     await nextTick();
     await waitForImages(el);
+    const { toPng } = await import("html-to-image");
     const dataUrl = await toPng(el, {
       cacheBust: true,
       backgroundColor: "#ffffff",

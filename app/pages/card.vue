@@ -2,55 +2,63 @@
 import type { Card } from "~~/types/card";
 
 const route = useRoute();
-const email = computed(() => route.query.email as string | undefined);
+const email = computed(() => (route.query.email as string)?.trim() || "");
 const { t } = useAppLocale();
+const appConfig = useAppConfig();
 
-const card = ref<Card | null>(null);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const cardKey = computed(() => (email.value ? `card-${email.value}` : "card-empty"));
 
-async function loadCardByEmail() {
-  if (!email.value) return;
-  loading.value = true;
-  error.value = null;
-  try {
-    const res = await $fetch<{
-      email: string;
-      first_name: string | null;
-      last_name: string | null;
-      company: string | null;
-      title: string | null;
-      phone: string | null;
-      fax: string | null;
-      mobile: string | null;
-      department?: { label_fr: string; label_en: string } | null;
-      job_title?: { label_fr: string; label_en: string } | null;
-    }>("/api/cards", {
-      query: { email: email.value },
-    });
-    card.value = {
-      color: useAppConfig().ui.colors.primary,
-      fName: res.first_name ?? "",
-      lName: res.last_name ?? "",
-      co: res.company ?? "",
-      title: res.title ?? "",
-      email: res.email,
-      phone: res.phone ?? "",
-      fax: res.fax ?? "",
-      mobile: res.mobile ?? "",
-      department: res.department ?? undefined,
-      job_title: res.job_title ?? undefined,
-    };
-  } catch (e) {
-    error.value = (e as any)?.statusCode === 404 ? t("card.notFound") : (e as Error).message;
-  } finally {
-    loading.value = false;
+const { data: card, pending: loading, error: fetchError } = await useAsyncData(
+  cardKey,
+  async () => {
+    if (!email.value) return null;
+    try {
+      const res = await $fetch<{
+        email: string;
+        first_name: string | null;
+        last_name: string | null;
+        company: string | null;
+        title: string | null;
+        phone: string | null;
+        fax: string | null;
+        mobile: string | null;
+        department?: { label_fr: string; label_en: string } | null;
+        job_title?: { label_fr: string; label_en: string } | null;
+      }>("/api/cards", {
+        query: { email: email.value },
+      });
+      return {
+        color: appConfig.ui?.colors?.primary,
+        fName: res.first_name ?? "",
+        lName: res.last_name ?? "",
+        co: res.company ?? "",
+        title: res.title ?? "",
+        email: res.email,
+        phone: res.phone ?? "",
+        fax: res.fax ?? "",
+        mobile: res.mobile ?? "",
+        department: res.department ?? undefined,
+        job_title: res.job_title ?? undefined,
+      } as Card;
+    } catch (e: any) {
+      if (e?.statusCode === 404) throw new Error(t("card.notFound"));
+      throw e;
+    }
+  },
+  {
+    watch: [email],
+    getCachedData: (key) => useNuxtData(key).data.value,
+    default: () => null,
   }
-}
+);
 
-watch(email, () => {
-  loadCardByEmail();
-}, { immediate: true });
+const error = computed(() => {
+  const e = fetchError.value;
+  if (!e) return null;
+  return (e as Error)?.message ?? null;
+});
+
+const TheViewComponent = defineAsyncComponent(() => import("~/components/TheViewComponent.vue"));
 </script>
 
 <template>

@@ -17,6 +17,31 @@ export default defineNuxtConfig({
     },
   },
 
+  routeRules: {
+    "/api/cards": { cors: true },
+    "/api/departments": { cors: true },
+    "/api/job-titles": { cors: true },
+  },
+
+  experimental: {
+    payloadExtraction: true,
+    componentIslands: false,
+  },
+
+  vite: {
+    build: {
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (id.includes("node_modules/html-to-image")) return "html-to-image";
+            if (id.includes("node_modules/nuxt-qrcode") || id.includes("node_modules/uqr")) return "qrcode";
+          },
+        },
+      },
+    },
+  },
+
   modules: [
     "@nuxt/ui",
     "@nuxt/eslint",
@@ -28,6 +53,13 @@ export default defineNuxtConfig({
     "@vueuse/nuxt",
     "@vite-pwa/nuxt",
   ],
+
+  // Éviter les timeouts réseau au build : utiliser Google pour Public Sans (plus fiable que fontshare en CI)
+  fonts: {
+    families: [
+      { name: "Public Sans", provider: "google" },
+    ],
+  },
 
   css: ["~/assets/css/main.css"],
 
