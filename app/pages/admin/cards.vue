@@ -14,7 +14,6 @@ const departmentForm = ref<{ id: string | null; label_fr: string; label_en: stri
 const jobTitleForm = ref<{ id: string | null; label_fr: string; label_en: string } | null>(null);
 const departmentSaveError = ref<string | null>(null);
 const jobTitleSaveError = ref<string | null>(null);
-const OTHER_VALUE = "__other__";
 
 async function loadCards() {
   loading.value = true;
@@ -71,44 +70,32 @@ function startEdit(card: any) {
   };
 }
 
-// Select Département : valeur = id ou __other__ ou "" ; si Autre, on affiche le champ texte company
+// Select Département : valeur = id ou "" (liste uniquement)
 const departmentSelectValue = computed({
-  get: () => {
-    if (!editing.value) return "";
-    if (editing.value.department_id) return editing.value.department_id;
-    if (editing.value.company) return OTHER_VALUE;
-    return "";
-  },
+  get: () => (editing.value?.department_id ?? "") || "",
   set: (v: string) => {
     if (!editing.value) return;
-    editing.value.department_id = v && v !== OTHER_VALUE ? v : null;
-    if (v !== OTHER_VALUE) editing.value.company = null;
+    editing.value.department_id = v || null;
+    if (v) editing.value.company = null;
   },
 });
 const departmentOptions = computed(() => [
   { value: "", label: "— " + t("admin.department") + " —" },
   ...departments.value.map((d) => ({ value: d.id, label: d.label_fr })),
-  { value: OTHER_VALUE, label: t("admin.otherFree") },
 ]);
 
-// Select Titre / Poste : id ou __other__ ou "" ; si Autre, champ texte title
+// Select Titre / Poste : id ou "" (liste uniquement)
 const jobTitleSelectValue = computed({
-  get: () => {
-    if (!editing.value) return "";
-    if (editing.value.job_title_id) return editing.value.job_title_id;
-    if (editing.value.title) return OTHER_VALUE;
-    return "";
-  },
+  get: () => (editing.value?.job_title_id ?? "") || "",
   set: (v: string) => {
     if (!editing.value) return;
-    editing.value.job_title_id = v && v !== OTHER_VALUE ? v : null;
-    if (v !== OTHER_VALUE) editing.value.title = null;
+    editing.value.job_title_id = v || null;
+    if (v) editing.value.title = null;
   },
 });
 const jobTitleOptions = computed(() => [
   { value: "", label: "— " + t("admin.titleField") + " —" },
   ...jobTitles.value.map((j) => ({ value: j.id, label: j.label_fr })),
-  { value: OTHER_VALUE, label: t("admin.otherFree") },
 ]);
 
 async function saveCard() {
@@ -380,9 +367,6 @@ onMounted(() => {
                 </option>
               </select>
             </UFormField>
-            <UFormField v-if="departmentSelectValue === OTHER_VALUE" :label="t('admin.department') + ' (saisie libre)'">
-              <UInput v-model="editing.company" :placeholder="t('admin.otherFree')" />
-            </UFormField>
 
             <UFormField :label="t('admin.titleField')">
               <select
@@ -393,9 +377,6 @@ onMounted(() => {
                   {{ opt.label }}
                 </option>
               </select>
-            </UFormField>
-            <UFormField v-if="jobTitleSelectValue === OTHER_VALUE" :label="t('admin.titleField') + ' (saisie libre)'">
-              <UInput v-model="editing.title" :placeholder="t('admin.otherFree')" />
             </UFormField>
 
             <UFormField :label="t('admin.phone')">
