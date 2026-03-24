@@ -2,6 +2,8 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+ENV NUXT_DISABLE_FONTS=1
+
 COPY package.json package-lock.json* ./
 RUN npm install
 

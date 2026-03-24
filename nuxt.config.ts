@@ -1,5 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
+const disableFonts = process.env.NUXT_DISABLE_FONTS === "1" || process.env.NUXT_DISABLE_FONTS === "true";
+
 export default defineNuxtConfig({
   devtools: { enabled: true },
   devServer: {
@@ -45,7 +47,7 @@ export default defineNuxtConfig({
   modules: [
     "@nuxt/ui",
     "@nuxt/eslint",
-    "@nuxt/fonts",
+    ...(disableFonts ? [] : ["@nuxt/fonts"]),
     "@nuxt/icon",
     "@nuxt/image",
 
@@ -54,12 +56,15 @@ export default defineNuxtConfig({
     "@vite-pwa/nuxt",
   ],
 
-  // Éviter les timeouts réseau au build : utiliser Google pour Public Sans (plus fiable que fontshare en CI)
-  fonts: {
-    families: [
-      { name: "Public Sans", provider: "google" },
-    ],
-  },
+  // Lors des builds Docker en environnements sans accès réseau, on désactive le module fonts.
+  ...(disableFonts
+    ? {}
+    : {
+        // Éviter les timeouts réseau au build : utiliser Google pour Public Sans (plus fiable que fontshare en CI)
+        fonts: {
+          families: [{ name: "Public Sans", provider: "google" }],
+        },
+      }),
 
   css: ["~/assets/css/main.css"],
 
@@ -71,8 +76,8 @@ export default defineNuxtConfig({
 
     includeAssets: ["favicon.ico", "apple-touch-icon.png", "favicon.svg"],
     manifest: {
-      name: "Cardyo",
-      short_name: "Cardyo",
+      name: "vcard",
+      short_name: "vcard",
       description: "A simple, URL based, digital card system.",
       theme_color: "#000000",
       icons: [
