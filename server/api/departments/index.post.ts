@@ -1,6 +1,8 @@
 import { query } from "../../utils/db";
+import { requireAdmin } from "../../utils/admin-auth";
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event);
   const body = await readBody<{ label_fr: string; label_en: string }>(event);
   if (!body?.label_fr?.trim() || !body?.label_en?.trim()) {
     setResponseStatus(event, 400);

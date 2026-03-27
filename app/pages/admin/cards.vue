@@ -1,5 +1,9 @@
 <script setup lang="ts">
+definePageMeta({ middleware: "admin-auth" });
+
 const { t, locale } = useAppLocale();
+const FIXED_PHONE = "675 878 034";
+const FIXED_FAX = "222 221 785";
 
 const activeTab = ref<"cards" | "departments" | "job_titles">("cards");
 const cards = ref<any[]>([]);
@@ -14,6 +18,13 @@ const departmentForm = ref<{ id: string | null; label_fr: string; label_en: stri
 const jobTitleForm = ref<{ id: string | null; label_fr: string; label_en: string } | null>(null);
 const departmentSaveError = ref<string | null>(null);
 const jobTitleSaveError = ref<string | null>(null);
+const authError = ref<string | null>(null);
+
+function formatGroupedNumber(value: string | null | undefined): string {
+  const digits = (value ?? "").replace(/\D+/g, "");
+  if (!digits) return "";
+  return digits.match(/.{1,3}/g)?.join(" ") ?? digits;
+}
 
 async function loadCards() {
   loading.value = true;
@@ -52,8 +63,8 @@ function startCreate() {
     last_name: "",
     company: "",
     title: "",
-    phone: "",
-    fax: "",
+    phone: FIXED_PHONE,
+    fax: FIXED_FAX,
     mobile: "",
     department_id: null,
     job_title_id: null,
@@ -67,8 +78,20 @@ function startEdit(card: any) {
     job_title_id: card.job_title_id ?? null,
     company: card.company ?? "",
     title: card.title ?? "",
+    phone: FIXED_PHONE,
+    fax: FIXED_FAX,
+    mobile: formatGroupedNumber(card.mobile ?? ""),
   };
 }
+
+watch(
+  () => editing.value?.mobile,
+  (v) => {
+    if (!editing.value) return;
+    const next = formatGroupedNumber(v ?? "");
+    if (next !== (v ?? "")) editing.value.mobile = next;
+  }
+);
 
 // Select Département : valeur = id ou "" (liste uniquement)
 const departmentSelectValue = computed({
@@ -104,9 +127,9 @@ async function saveCard() {
     email: editing.value.email,
     first_name: editing.value.first_name,
     last_name: editing.value.last_name,
-    phone: editing.value.phone,
-    fax: editing.value.fax,
-    mobile: editing.value.mobile,
+    phone: FIXED_PHONE,
+    fax: FIXED_FAX,
+    mobile: formatGroupedNumber(editing.value.mobile),
     department_id: editing.value.department_id || null,
     job_title_id: editing.value.job_title_id || null,
     company: editing.value.department_id ? null : (editing.value.company || null),
@@ -250,16 +273,32 @@ onMounted(() => {
   loadDepartments();
   loadJobTitles();
 });
+
+async function logoutAdmin() {
+  authError.value = null;
+  try {
+    await $fetch("/api/auth/admin/logout", { method: "POST" });
+    await navigateTo("/");
+  } catch (e) {
+    authError.value = (e as Error)?.message ?? t("admin.loadError");
+  }
+}
 </script>
 
 <template>
   <div class="min-h-screen px-4 py-6 sm:px-8">
-    <h1 class="text-2xl font-bold mb-4">{{ t("admin.title") }}</h1>
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <h1 class="text-2xl font-bold">{{ t("admin.title") }}</h1>
+      <UButton type="button" variant="outline" size="sm" icon="i-lucide-log-out" @click="logoutAdmin">
+        {{ t("admin.logout") }}
+      </UButton>
+    </div>
+    <p v-if="authError" class="mb-3 text-sm text-red-500">{{ authError }}</p>
 
-    <div class="flex gap-1 mb-4 border-b border-zinc-200 dark:border-zinc-700">
+    <div class="flex flex-wrap gap-2 mb-4 pb-2 border-b border-zinc-200 dark:border-zinc-700">
       <button
         type="button"
-        class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors"
+        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === 'cards' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'"
         @click="activeTab = 'cards'"
       >
@@ -267,7 +306,7 @@ onMounted(() => {
       </button>
       <button
         type="button"
-        class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors"
+        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === 'departments' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'"
         @click="activeTab = 'departments'"
       >
@@ -275,7 +314,7 @@ onMounted(() => {
       </button>
       <button
         type="button"
-        class="px-4 py-2 text-sm font-medium rounded-t-lg transition-colors"
+        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
         :class="activeTab === 'job_titles' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'"
         @click="activeTab = 'job_titles'"
       >
@@ -380,13 +419,13 @@ onMounted(() => {
             </UFormField>
 
             <UFormField :label="t('admin.phone')">
-              <UInput v-model="editing.phone" />
+              <UInput :model-value="FIXED_PHONE" readonly />
             </UFormField>
             <UFormField :label="t('admin.fax')">
-              <UInput v-model="editing.fax" />
+              <UInput :model-value="FIXED_FAX" readonly />
             </UFormField>
             <UFormField :label="t('admin.mobile')">
-              <UInput v-model="editing.mobile" />
+              <UInput v-model="editing.mobile" inputmode="numeric" />
             </UFormField>
 
             <div class="flex gap-2 pt-2">

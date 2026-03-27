@@ -1,24 +1,37 @@
 <script setup lang="ts">
 const router = useRouter();
-const appConfig = useAppConfig();
 const { t } = useAppLocale();
 
 const email = ref("");
+const password = ref("");
+const loading = ref(false);
+const error = ref<string | null>(null);
 
-const adminEmail = computed(() => appConfig.admin?.email?.toLowerCase() ?? "");
-
-function go() {
+async function go() {
+  error.value = null;
   const trimmedEmail = email.value.trim();
   if (!trimmedEmail) return;
+  const trimmedPassword = password.value.trim();
 
-  const lowerEmail = trimmedEmail.toLowerCase();
-
-  if (adminEmail.value && lowerEmail === adminEmail.value) {
-    router.push("/admin/cards");
-    return;
+  if (trimmedPassword) {
+    loading.value = true;
+    try {
+      await $fetch("/api/auth/admin/login", {
+        method: "POST",
+        body: { email: trimmedEmail, password: trimmedPassword },
+      });
+      password.value = "";
+      await router.push("/admin/cards");
+      return;
+    } catch (e: any) {
+      error.value = e?.data?.error || t("login.authFailed");
+      return;
+    } finally {
+      loading.value = false;
+    }
   }
 
-  router.push({
+  await router.push({
     path: "/card",
     query: { email: trimmedEmail },
   });
@@ -73,10 +86,26 @@ function go() {
               :placeholder="t('login.emailPlaceholder')"
             />
           </UFormField>
+          <UFormField :label="t('login.passwordLabel')" name="password" class="w-full">
+            <UInput
+              v-model="password"
+              type="password"
+              class="w-full"
+              autocomplete="current-password"
+              :placeholder="t('login.passwordPlaceholder')"
+            />
+          </UFormField>
+          <p class="text-[11px] text-slate-500 -mt-1">
+            {{ t('login.passwordHint') }}
+          </p>
+          <p v-if="error" class="text-xs text-red-500">
+            {{ error }}
+          </p>
 
           <UButton
             type="submit"
             color="primary"
+            :loading="loading"
             class="w-full mt-1 justify-center gap-2 font-semibold"
           >
             {{ t('login.submitButton') }}

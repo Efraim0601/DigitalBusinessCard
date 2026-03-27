@@ -19,6 +19,12 @@ export default defineNuxtConfig({
     },
   },
 
+  runtimeConfig: {
+    adminEmail: process.env.ADMIN_EMAIL || "admin@afrilandfirstbank.com",
+    adminPassword: process.env.ADMIN_PASSWORD || "adminabf@afrilandfirstbank.com",
+    adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "change-this-secret-in-production",
+  },
+
   routeRules: {
     "/api/cards": { cors: true },
     "/api/departments": { cors: true },

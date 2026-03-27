@@ -31,6 +31,7 @@ const displayedDepartment = computed(() => {
   return translateCardDepartment(urlCard.co, locale.value);
 });
 const route = useRoute();
+const FIXED_PHONE = "675 878 034";
 const FIXED_FAX = "222 221 785";
 
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
@@ -421,10 +422,10 @@ onBeforeUnmount(() => {
             </div>
             <div class="text-[11px] text-[#222] text-right font-[Arial,Helvetica,sans-serif]">
               <table class="border-collapse">
-                <tr v-if="urlCard.phone && urlCard.phone !== ''">
+                <tr>
                   <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.phone') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
-                    <a :href="`tel:${urlCard.phone}`" class="text-[#222] hover:underline">{{ urlCard.phone }}</a>
+                    <a href="tel:675878034" class="text-[#222] hover:underline">{{ FIXED_PHONE }}</a>
                   </td>
                 </tr>
                 <tr>
@@ -551,8 +552,8 @@ onBeforeUnmount(() => {
         <UIcon name="i-lucide-id-card" class="size-5" />
       </button>
       <a
-        v-if="(urlCard.mobile || urlCard.phone) && (urlCard.mobile !== '' || urlCard.phone !== '')"
-        :href="`tel:${urlCard.mobile || urlCard.phone}`"
+        v-if="(urlCard.mobile || FIXED_PHONE) && (urlCard.mobile !== '' || FIXED_PHONE !== '')"
+        :href="`tel:${urlCard.mobile || '675878034'}`"
         class="card-cta-icon"
         :title="t('action.call')"
       >

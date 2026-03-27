@@ -6,10 +6,8 @@ const email = computed(() => (route.query.email as string)?.trim() || "");
 const { t } = useAppLocale();
 const appConfig = useAppConfig();
 
-const cardKey = computed(() => (email.value ? `card-${email.value}` : "card-empty"));
-
 const { data: card, pending: loading, error: fetchError } = await useAsyncData(
-  cardKey,
+  "card-by-email",
   async () => {
     if (!email.value) return null;
     try {
@@ -47,7 +45,6 @@ const { data: card, pending: loading, error: fetchError } = await useAsyncData(
   },
   {
     watch: [email],
-    getCachedData: (key) => useNuxtData(key).data.value,
     default: () => null,
   }
 );

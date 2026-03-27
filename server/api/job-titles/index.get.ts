@@ -1,6 +1,8 @@
 import { query } from "../../utils/db";
+import { requireAdmin } from "../../utils/admin-auth";
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  requireAdmin(event);
   const { rows } = await query<{
     id: string;
     label_fr: string;

@@ -1,6 +1,9 @@
 import { query } from "../../utils/db";
+import { FIXED_FAX, FIXED_PHONE, formatGroupedNumber } from "../../utils/contact-constants";
+import { requireAdmin } from "../../utils/admin-auth";
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event);
   const id = getRouterParam(event, "id");
   if (!id) {
     setResponseStatus(event, 400);
@@ -19,9 +22,10 @@ export default defineEventHandler(async (event) => {
     job_title_id?: string | null;
   }>(event);
 
-  const fields: string[] = [];
+  const fields: string[] = ["phone = $1", "fax = $2"];
   const values: unknown[] = [];
-  let idx = 1;
+  values.push(FIXED_PHONE, FIXED_FAX);
+  let idx = 3;
 
   const allEntries: [string, string][] = [
     ["first_name", "first_name"],
@@ -39,14 +43,12 @@ export default defineEventHandler(async (event) => {
     if (body[key as keyof typeof body] !== undefined) {
       fields.push(`${column} = $${idx}`);
       // @ts-expect-error index access
-      values.push(body[key]);
+      values.push(key === "mobile" ? (formatGroupedNumber(body[key]) || null) : body[key]);
       idx += 1;
     }
   }
 
-  if (!fields.length) {
-    return { error: "nothing to update" };
-  }
+  // fields contains at least phone/fax fixed values to enforce uniform data.
 
   values.push(id);
 
@@ -66,20 +68,18 @@ export default defineEventHandler(async (event) => {
     }
     return rows[0];
   } catch {
-    const fieldsBasic: string[] = [];
+    const fieldsBasic: string[] = ["phone = $1", "fax = $2"];
     const valuesBasic: unknown[] = [];
-    let i = 1;
+    valuesBasic.push(FIXED_PHONE, FIXED_FAX);
+    let i = 3;
     for (const [key, column] of allEntries) {
       if (column === "department_id" || column === "job_title_id") continue;
       if (body[key as keyof typeof body] !== undefined) {
         fieldsBasic.push(`${column} = $${i}`);
-        valuesBasic.push(body[key as keyof typeof body]);
+        const val = body[key as keyof typeof body];
+        valuesBasic.push(key === "mobile" ? (formatGroupedNumber(val as string | null | undefined) || null) : val);
         i += 1;
       }
-    }
-    if (!fieldsBasic.length) {
-      setResponseStatus(event, 400);
-      return { error: "nothing to update" };
     }
     valuesBasic.push(id);
     const { rows } = await query(

@@ -1,6 +1,9 @@
 import { query } from "../../utils/db";
+import { FIXED_FAX, FIXED_PHONE, formatGroupedNumber } from "../../utils/contact-constants";
+import { requireAdmin } from "../../utils/admin-auth";
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event);
   const body = await readBody<{
     email: string;
     first_name?: string;
@@ -25,9 +28,9 @@ export default defineEventHandler(async (event) => {
     body.last_name ?? null,
     body.company ?? null,
     body.title ?? null,
-    body.phone ?? null,
-    body.fax ?? null,
-    body.mobile ?? null,
+    FIXED_PHONE,
+    FIXED_FAX,
+    formatGroupedNumber(body.mobile) || null,
     body.department_id ?? null,
     body.job_title_id ?? null,
   ];
@@ -37,9 +40,9 @@ export default defineEventHandler(async (event) => {
     body.last_name ?? null,
     body.company ?? null,
     body.title ?? null,
-    body.phone ?? null,
-    body.fax ?? null,
-    body.mobile ?? null,
+    FIXED_PHONE,
+    FIXED_FAX,
+    formatGroupedNumber(body.mobile) || null,
   ];
 
   try {

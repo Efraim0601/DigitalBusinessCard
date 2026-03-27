@@ -1,6 +1,8 @@
 import { query } from "../../utils/db";
+import { requireAdmin } from "../../utils/admin-auth";
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event);
   const id = getRouterParam(event, "id");
   if (!id) {
     setResponseStatus(event, 400);
