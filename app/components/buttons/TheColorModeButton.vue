@@ -1,4 +1,7 @@
 <script setup>
+const props = withDefaults(defineProps<{ floating?: boolean }>(), {
+  floating: true,
+});
 const colorMode = useColorMode();
 
 const isDark = computed({
@@ -18,7 +21,7 @@ const isDark = computed({
       color="primary"
       variant="soft"
       size="lg"
-      class="absolute right-20 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95"
+      :class="props.floating ? 'absolute right-20 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95' : 'cursor-pointer'"
       @click="isDark = !isDark"
     />
 

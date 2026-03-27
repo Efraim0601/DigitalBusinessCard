@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import colors from "tailwindcss/colors";
 import { omit } from "#ui/utils";
+const props = withDefaults(defineProps<{ floating?: boolean }>(), {
+  floating: true,
+});
 
 const appConfig = useAppConfig();
 
@@ -40,7 +43,7 @@ function handleColorChange(color: string) {
         color="primary"
         :variant="open ? 'ghost' : 'soft'"
         size="lg"
-        class="absolute right-4 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95"
+        :class="props.floating ? 'absolute right-4 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95' : 'cursor-pointer'"
         aria-label="Color picker"
         :ui="{ leadingIcon: 'text-(--ui-primary)' }"
       />

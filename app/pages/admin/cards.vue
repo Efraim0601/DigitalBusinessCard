@@ -6,9 +6,10 @@ const FIXED_PHONE = "675 878 034";
 const FIXED_FAX = "222 221 785";
 
 const activeTab = ref<"cards" | "departments" | "job_titles">("cards");
-const cards = ref<any[]>([]);
-const departments = ref<{ id: string; label_fr: string; label_en: string }[]>([]);
-const jobTitles = ref<{ id: string; label_fr: string; label_en: string }[]>([]);
+type Paged<T> = { items: T[]; total: number; limit: number; offset: number };
+const cards = ref<Paged<any>>({ items: [], total: 0, limit: 20, offset: 0 });
+const departments = ref<Paged<{ id: string; label_fr: string; label_en: string }>>({ items: [], total: 0, limit: 20, offset: 0 });
+const jobTitles = ref<Paged<{ id: string; label_fr: string; label_en: string }>>({ items: [], total: 0, limit: 20, offset: 0 });
 const loading = ref(false);
 const error = ref<string | null>(null);
 const editing = ref<any | null>(null);
@@ -26,12 +27,34 @@ function formatGroupedNumber(value: string | null | undefined): string {
   return digits.match(/.{1,3}/g)?.join(" ") ?? digits;
 }
 
+const pageSize = 20;
+const searchCards = ref("");
+const searchDepartments = ref("");
+const searchJobTitles = ref("");
+const pageCards = ref(1);
+const pageDepartments = ref(1);
+const pageJobTitles = ref(1);
+
+function debounce<T extends (...args: any[]) => void>(fn: T, waitMs: number) {
+  let t: number | undefined;
+  return (...args: Parameters<T>) => {
+    if (t) window.clearTimeout(t);
+    t = window.setTimeout(() => fn(...args), waitMs);
+  };
+}
+
 async function loadCards() {
   loading.value = true;
   error.value = null;
   try {
-    const res = await $fetch("/api/cards");
-    cards.value = Array.isArray(res) ? res : [];
+    const res = await $fetch<Paged<any>>("/api/cards", {
+      query: {
+        limit: pageSize,
+        offset: (pageCards.value - 1) * pageSize,
+        q: searchCards.value.trim() || undefined,
+      },
+    });
+    cards.value = res?.items ? res : { items: [], total: 0, limit: pageSize, offset: 0 };
   } catch (e) {
     error.value = t("admin.loadError");
   } finally {
@@ -41,7 +64,14 @@ async function loadCards() {
 
 async function loadDepartments() {
   try {
-    departments.value = await $fetch("/api/departments");
+    const res = await $fetch<Paged<any>>("/api/departments", {
+      query: {
+        limit: pageSize,
+        offset: (pageDepartments.value - 1) * pageSize,
+        q: searchDepartments.value.trim() || undefined,
+      },
+    });
+    departments.value = res?.items ? res : { items: [], total: 0, limit: pageSize, offset: 0 };
   } catch (e) {
     console.error(e);
   }
@@ -49,7 +79,14 @@ async function loadDepartments() {
 
 async function loadJobTitles() {
   try {
-    jobTitles.value = await $fetch("/api/job-titles");
+    const res = await $fetch<Paged<any>>("/api/job-titles", {
+      query: {
+        limit: pageSize,
+        offset: (pageJobTitles.value - 1) * pageSize,
+        q: searchJobTitles.value.trim() || undefined,
+      },
+    });
+    jobTitles.value = res?.items ? res : { items: [], total: 0, limit: pageSize, offset: 0 };
   } catch (e) {
     console.error(e);
   }
@@ -104,7 +141,7 @@ const departmentSelectValue = computed({
 });
 const departmentOptions = computed(() => [
   { value: "", label: "— " + t("admin.department") + " —" },
-  ...departments.value.map((d) => ({ value: d.id, label: d.label_fr })),
+  ...departments.value.items.map((d) => ({ value: d.id, label: d.label_fr })),
 ]);
 
 // Select Titre / Poste : id ou "" (liste uniquement)
@@ -118,7 +155,7 @@ const jobTitleSelectValue = computed({
 });
 const jobTitleOptions = computed(() => [
   { value: "", label: "— " + t("admin.titleField") + " —" },
-  ...jobTitles.value.map((j) => ({ value: j.id, label: j.label_fr })),
+  ...jobTitles.value.items.map((j) => ({ value: j.id, label: j.label_fr })),
 ]);
 
 async function saveCard() {
@@ -274,6 +311,27 @@ onMounted(() => {
   loadJobTitles();
 });
 
+const debouncedReloadCards = debounce(() => {
+  pageCards.value = 1;
+  loadCards();
+}, 300);
+const debouncedReloadDepartments = debounce(() => {
+  pageDepartments.value = 1;
+  loadDepartments();
+}, 300);
+const debouncedReloadJobTitles = debounce(() => {
+  pageJobTitles.value = 1;
+  loadJobTitles();
+}, 300);
+
+watch(searchCards, () => import.meta.client && debouncedReloadCards());
+watch(searchDepartments, () => import.meta.client && debouncedReloadDepartments());
+watch(searchJobTitles, () => import.meta.client && debouncedReloadJobTitles());
+
+watch(pageCards, () => loadCards());
+watch(pageDepartments, () => loadDepartments());
+watch(pageJobTitles, () => loadJobTitles());
+
 async function logoutAdmin() {
   authError.value = null;
   try {
@@ -287,11 +345,16 @@ async function logoutAdmin() {
 
 <template>
   <div class="min-h-screen px-4 py-6 sm:px-8">
-    <div class="mb-4 flex items-center justify-between gap-3">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-bold">{{ t("admin.title") }}</h1>
-      <UButton type="button" variant="outline" size="sm" icon="i-lucide-log-out" @click="logoutAdmin">
-        {{ t("admin.logout") }}
-      </UButton>
+      <div class="flex flex-wrap items-center gap-2">
+        <ButtonsTheLocaleToggle :floating="false" />
+        <ButtonsTheColorModeButton :floating="false" />
+        <ButtonsTheColorSelector :floating="false" />
+        <UButton type="button" variant="outline" size="sm" icon="i-lucide-log-out" @click="logoutAdmin">
+          {{ t("admin.logout") }}
+        </UButton>
+      </div>
     </div>
     <p v-if="authError" class="mb-3 text-sm text-red-500">{{ authError }}</p>
 
@@ -324,12 +387,17 @@ async function logoutAdmin() {
 
     <!-- Onglet Cartes -->
     <template v-if="activeTab === 'cards'">
-      <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
         <UButton color="primary" variant="soft" size="md" @click="startCreate">
           {{ t("admin.createCard") }}
         </UButton>
         <span v-if="loading" class="text-sm text-zinc-500">{{ t("admin.loading") }}</span>
         <p v-if="error" class="text-sm text-red-500">{{ error }}</p>
+        </div>
+        <div class="sm:ml-auto w-full sm:w-72">
+          <UInput v-model="searchCards" :placeholder="t('admin.searchCards')" />
+        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-[2fr,1.2fr] gap-6">
@@ -346,7 +414,7 @@ async function logoutAdmin() {
             </thead>
             <tbody>
               <tr
-                v-for="card in cards"
+                v-for="card in cards.items"
                 :key="card.id"
                 class="border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 cursor-pointer"
                 @click="startEdit(card)"
@@ -368,13 +436,42 @@ async function logoutAdmin() {
                   </UButton>
                 </td>
               </tr>
-<tr v-if="!loading && cards.length === 0">
+<tr v-if="!loading && cards.items.length === 0">
               <td colspan="5" class="px-3 py-8 text-center text-sm text-zinc-500">
                 {{ t("admin.noCards") }}
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 px-2 py-3">
+        <p class="text-xs text-zinc-500">
+          {{ cards.total }} résultat(s)
+        </p>
+        <div class="flex items-center gap-2">
+          <UButton
+            type="button"
+            size="sm"
+            variant="outline"
+            :disabled="pageCards <= 1"
+            @click="pageCards -= 1"
+          >
+            {{ t("admin.prev") }}
+          </UButton>
+          <span class="text-xs text-zinc-600 dark:text-zinc-300">
+            {{ pageCards }} / {{ Math.max(1, Math.ceil(cards.total / pageSize)) }}
+          </span>
+          <UButton
+            type="button"
+            size="sm"
+            variant="outline"
+            :disabled="pageCards >= Math.ceil(cards.total / pageSize)"
+            @click="pageCards += 1"
+          >
+            {{ t("admin.next") }}
+          </UButton>
+        </div>
       </div>
 
         <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
@@ -447,10 +544,13 @@ async function logoutAdmin() {
 
     <!-- Onglet Directions -->
     <template v-else-if="activeTab === 'departments'">
-      <div class="mb-4">
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <UButton color="primary" variant="soft" @click="openAddDepartment">
           {{ t("admin.addDepartment") }}
         </UButton>
+        <div class="sm:ml-auto w-full sm:w-72">
+          <UInput v-model="searchDepartments" :placeholder="t('admin.searchDepartments')" />
+        </div>
       </div>
       <p v-if="departmentSaveError" class="mb-3 text-sm text-red-500">{{ departmentSaveError }}</p>
       <div v-if="departmentForm" class="border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 p-4 mb-4 max-w-md">
@@ -476,7 +576,7 @@ async function logoutAdmin() {
           </thead>
           <tbody>
             <tr
-              v-for="d in departments"
+              v-for="d in departments.items"
               :key="d.id"
               class="border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
             >
@@ -487,20 +587,46 @@ async function logoutAdmin() {
                 <UButton color="red" variant="ghost" size="xs" @click="removeDepartment(d)">{{ t("admin.delete") }}</UButton>
               </td>
             </tr>
-            <tr v-if="departments.length === 0">
+            <tr v-if="departments.items.length === 0">
               <td colspan="3" class="px-3 py-4 text-center text-zinc-500">{{ t("admin.noCards") }}</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <div class="flex items-center justify-between gap-3 px-2 py-3">
+        <p class="text-xs text-zinc-500">
+          {{ departments.total }} résultat(s)
+        </p>
+        <div class="flex items-center gap-2">
+          <UButton type="button" size="sm" variant="outline" :disabled="pageDepartments <= 1" @click="pageDepartments -= 1">
+            {{ t("admin.prev") }}
+          </UButton>
+          <span class="text-xs text-zinc-600 dark:text-zinc-300">
+            {{ pageDepartments }} / {{ Math.max(1, Math.ceil(departments.total / pageSize)) }}
+          </span>
+          <UButton
+            type="button"
+            size="sm"
+            variant="outline"
+            :disabled="pageDepartments >= Math.ceil(departments.total / pageSize)"
+            @click="pageDepartments += 1"
+          >
+            {{ t("admin.next") }}
+          </UButton>
+        </div>
+      </div>
     </template>
 
     <!-- Onglet Titres / Postes -->
     <template v-else-if="activeTab === 'job_titles'">
-      <div class="mb-4">
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <UButton color="primary" variant="soft" @click="openAddJobTitle">
           {{ t("admin.addJobTitle") }}
         </UButton>
+        <div class="sm:ml-auto w-full sm:w-72">
+          <UInput v-model="searchJobTitles" :placeholder="t('admin.searchJobTitles')" />
+        </div>
       </div>
       <p v-if="jobTitleSaveError" class="mb-3 text-sm text-red-500">{{ jobTitleSaveError }}</p>
       <div v-if="jobTitleForm" class="border border-zinc-200 rounded-xl bg-white dark:bg-zinc-900 p-4 mb-4 max-w-md">
@@ -526,7 +652,7 @@ async function logoutAdmin() {
           </thead>
           <tbody>
             <tr
-              v-for="j in jobTitles"
+              v-for="j in jobTitles.items"
               :key="j.id"
               class="border-t border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
             >
@@ -537,11 +663,34 @@ async function logoutAdmin() {
                 <UButton color="red" variant="ghost" size="xs" @click="removeJobTitle(j)">{{ t("admin.delete") }}</UButton>
               </td>
             </tr>
-            <tr v-if="jobTitles.length === 0">
+            <tr v-if="jobTitles.items.length === 0">
               <td colspan="3" class="px-3 py-4 text-center text-zinc-500">{{ t("admin.noCards") }}</td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 px-2 py-3">
+        <p class="text-xs text-zinc-500">
+          {{ jobTitles.total }} résultat(s)
+        </p>
+        <div class="flex items-center gap-2">
+          <UButton type="button" size="sm" variant="outline" :disabled="pageJobTitles <= 1" @click="pageJobTitles -= 1">
+            {{ t("admin.prev") }}
+          </UButton>
+          <span class="text-xs text-zinc-600 dark:text-zinc-300">
+            {{ pageJobTitles }} / {{ Math.max(1, Math.ceil(jobTitles.total / pageSize)) }}
+          </span>
+          <UButton
+            type="button"
+            size="sm"
+            variant="outline"
+            :disabled="pageJobTitles >= Math.ceil(jobTitles.total / pageSize)"
+            @click="pageJobTitles += 1"
+          >
+            {{ t("admin.next") }}
+          </UButton>
+        </div>
       </div>
     </template>
   </div>

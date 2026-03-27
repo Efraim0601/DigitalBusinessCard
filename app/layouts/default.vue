@@ -7,14 +7,21 @@ const showCreateButton = computed(() => {
   if (path === "/" || path.startsWith("/admin")) return false;
   return true;
 });
+
+const showFloatingToolbar = computed(() => {
+  const path = route.path || "/";
+  return !path.startsWith("/admin");
+});
 </script>
 
 <template>
   <div>
     <ButtonsTheCreateButton v-if="showCreateButton" />
-    <ButtonsTheColorSelector />
-    <ButtonsTheLocaleToggle />
-    <ButtonsTheColorModeButton />
+    <template v-if="showFloatingToolbar">
+      <ButtonsTheColorSelector />
+      <ButtonsTheLocaleToggle />
+      <ButtonsTheColorModeButton />
+    </template>
     <slot />
   </div>
 </template>

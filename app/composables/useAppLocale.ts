@@ -1,7 +1,7 @@
 import type { Locale } from "~/locales/translations";
 import { translations } from "~/locales/translations";
 
-const STORAGE_KEY = "cardyo-locale";
+const STORAGE_KEY = "vcard-locale";
 
 export function useAppLocale() {
   const locale = useState<Locale>("app-locale", () => "fr");

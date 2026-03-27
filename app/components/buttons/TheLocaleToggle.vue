@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+const props = withDefaults(defineProps<{ floating?: boolean }>(), {
+  floating: true,
+});
 const { locale, setLocale } = useAppLocale();
 
 const label = computed(() => (locale.value === "fr" ? "EN" : "FR"));
@@ -15,7 +18,7 @@ function toggle() {
     color="primary"
     variant="soft"
     size="lg"
-    class="absolute right-36 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95"
+    :class="props.floating ? 'absolute right-36 top-4 cursor-pointer transition-all ease-in-out hover:scale-105 active:scale-95' : 'cursor-pointer'"
     :title="locale === 'fr' ? 'Switch to English' : 'Passer en français'"
     @click="toggle"
   />

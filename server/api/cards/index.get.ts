@@ -39,34 +39,64 @@ export default defineEventHandler(async (event) => {
   requireAdmin(event);
 
   const q = getQuery(event);
-  const limit = Number(q.limit ?? 50);
-  const offset = Number(q.offset ?? 0);
+  const limit = Math.min(200, Math.max(1, Number(q.limit ?? 20)));
+  const offset = Math.max(0, Number(q.offset ?? 0));
+  const search = typeof q.q === "string" ? q.q.trim() : "";
+  const searchLike = search ? `%${search}%` : null;
 
   try {
+    const { rows: totalRows } = await query<{ total: number }>(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM cards c
+      WHERE ($1::text IS NULL)
+         OR (c.email ILIKE $1 OR c.first_name ILIKE $1 OR c.last_name ILIKE $1)
+    `,
+      [searchLike]
+    );
+    const total = totalRows[0]?.total ?? 0;
+
     const { rows } = await query(
       `
       SELECT ${cardWithJoinsFields}
       FROM cards c
       LEFT JOIN departments d ON c.department_id = d.id
       LEFT JOIN job_titles j ON c.job_title_id = j.id
+      WHERE ($3::text IS NULL)
+         OR (c.email ILIKE $3 OR c.first_name ILIKE $3 OR c.last_name ILIKE $3)
       ORDER BY c.created_at DESC
       LIMIT $1 OFFSET $2
     `,
-      [limit, offset]
+      [limit, offset, searchLike]
     );
-    return rows.map(mapRowToCard);
+    return { items: rows.map(mapRowToCard), total, limit, offset };
   } catch {
+    const { rows: totalRows } = await query<{ total: number }>(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM cards c
+      WHERE ($1::text IS NULL)
+         OR (c.email ILIKE $1 OR c.first_name ILIKE $1 OR c.last_name ILIKE $1)
+    `,
+      [searchLike]
+    );
+    const total = totalRows[0]?.total ?? 0;
+
     const { rows } = await query(
       `SELECT id, email, first_name, last_name, company, title, phone, fax, mobile, created_at, updated_at
-       FROM cards ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
+       FROM cards
+       WHERE ($3::text IS NULL)
+          OR (email ILIKE $3 OR first_name ILIKE $3 OR last_name ILIKE $3)
+       ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset, searchLike]
     );
-    return rows.map((r: any) => ({
+    const items = rows.map((r: any) => ({
       ...mapRowToCard(r),
       department_id: null,
       job_title_id: null,
       department: null,
       job_title: null,
     }));
+    return { items, total, limit, offset };
   }
 });
