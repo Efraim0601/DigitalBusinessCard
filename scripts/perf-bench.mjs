@@ -185,7 +185,7 @@ async function preflightCheck(urls, { timeoutMs, attempts }) {
 }
 
 function renderMarkdownReport(meta, results) {
-  const header = `# Cardyo Performance Report
+  const header = `# vcard Performance Report
 
 Generated: ${meta.generatedAt}
 Node: ${meta.node}
@@ -197,6 +197,16 @@ Timeout: ${meta.timeoutMs}ms
   const lines = [];
   for (const r of results) {
     const s = r.stats;
+    const sampleErrors =
+      r.sampleErrors?.length
+        ? `- Sample errors: \n${r.sampleErrors
+            .map((e) => {
+              const name = e.error?.name || "Error";
+              const message = e.error?.message || "";
+              return `  - ${name} (${e.status}) at #${e.at}: ${message}`;
+            })
+            .join("\n")}\n`
+        : "";
     lines.push(
       `\n## ${r.name}
 - URL: ${r.url}
@@ -204,11 +214,8 @@ Timeout: ${meta.timeoutMs}ms
 - Duration: ${fmtMs(r.durationMs)}
 - Errors: ${s.errCount}/${r.total}
 - Latency: p50 ${fmtMs(s.p50Ms)} | p95 ${fmtMs(s.p95Ms)} | p99 ${fmtMs(s.p99Ms)} | p99.9 ${fmtMs(s.p999Ms)}
-`
+${sampleErrors}`
     );
-    if (r.sampleErrors?.length) {
-      lines.push(`- Sample errors: \n${r.sampleErrors.map((e) => `  - ${e.error?.name || "Error"} (${e.status}) at #${e.at}: ${e.error?.message || ""}`).join("\n")}\n`);
-    }
   }
 
   return header + lines.join("\n");
@@ -351,8 +358,10 @@ async function main() {
   console.log(`MD report:   ${reportMdPath}`);
 }
 
-main().catch((e) => {
+try {
+  await main();
+} catch (e) {
   console.error("Benchmark failed:", e);
   process.exit(1);
-});
+}
 

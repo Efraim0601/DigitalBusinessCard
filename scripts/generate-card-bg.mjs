@@ -13,18 +13,14 @@ const root = join(__dirname, "..");
 const pdfPath = join(root, "app", "assets", "Carte_digitale 1.pdf");
 const outPath = join(root, "public", "carte-digitale-bg.png");
 
-async function main() {
-  try {
-    const doc = await pdf(pdfPath, { scale: 2 });
-    const firstPage = await doc.getPage(1);
-    if (!firstPage) throw new Error("Aucune page dans le PDF");
-    await mkdir(dirname(outPath), { recursive: true });
-    await writeFile(outPath, firstPage);
-    console.log("OK: public/carte-digitale-bg.png généré.");
-  } catch (e) {
-    console.error("Erreur:", e.message);
-    process.exit(1);
-  }
+try {
+  const doc = await pdf(pdfPath, { scale: 2 });
+  const firstPage = await doc.getPage(1);
+  if (!firstPage) throw new Error("Aucune page dans le PDF");
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(outPath, firstPage);
+  console.log("OK: public/carte-digitale-bg.png généré.");
+} catch (e) {
+  console.error("Erreur:", e?.message || String(e));
+  process.exit(1);
 }
-
-main();
