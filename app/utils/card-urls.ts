@@ -18,3 +18,9 @@ export function buildPublicCardUrl(
   const suffix = search ? `?${search}` : "";
   return `${origin}${path}${suffix}`;
 }
+
+/** Ajoute `employee=1` pour le lien employé (RH → collaborateur). */
+export function withEmployeeQuery(publicUrl: string): string {
+  if (!publicUrl) return "";
+  return publicUrl.includes("?") ? `${publicUrl}&employee=1` : `${publicUrl}?employee=1`;
+}

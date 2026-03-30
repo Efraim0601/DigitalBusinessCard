@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPublicCardUrl } from "../../app/utils/card-urls";
+import { buildPublicCardUrl, withEmployeeQuery } from "../../app/utils/card-urls";
 
 describe("app/utils/card-urls", () => {
   it("retire owner et employee de la query", () => {
@@ -21,5 +21,16 @@ describe("app/utils/card-urls", () => {
     const u = buildPublicCardUrl("https://x.test", "/", { x: ["a", "b"] });
     expect(u).toContain("x=a");
     expect(u).not.toContain("b");
+  });
+
+  it("ignore les clés undefined et les valeurs vides", () => {
+    const u = buildPublicCardUrl("https://x", "/c", { a: undefined, b: "", c: "ok" });
+    expect(u).toBe("https://x/c?c=ok");
+  });
+
+  it("withEmployeeQuery ajoute employee=1", () => {
+    expect(withEmployeeQuery("")).toBe("");
+    expect(withEmployeeQuery("https://h/x?e=1")).toBe("https://h/x?e=1&employee=1");
+    expect(withEmployeeQuery("https://h/x")).toBe("https://h/x?employee=1");
   });
 });

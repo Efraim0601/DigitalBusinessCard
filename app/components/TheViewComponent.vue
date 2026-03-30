@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { Card } from "~~/types/card";
-import { buildPublicCardUrl } from "~/utils/card-urls";
+import { buildPublicCardUrl, withEmployeeQuery } from "~/utils/card-urls";
+import { nextPaint } from "~/utils/next-paint";
 import { translateCardTitle, translateCardDepartment } from "~/locales/card-value-translations";
 
 const url = ref("waiting");
@@ -37,12 +38,6 @@ const route = useRoute();
 const FIXED_PHONE = "675 878 034";
 const FIXED_FAX = "222 221 785";
 
-function nextPaint(): Promise<void> {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
-
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
 const publicUrl = computed(() => {
   if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
@@ -54,12 +49,7 @@ const publicUrl = computed(() => {
 });
 
 /** Lien pour l'employé (RH envoie à Marco) : accès à la carte + QR code, sans droit d'édition. */
-const employeeLink = computed(() => {
-  const base = publicUrl.value;
-  if (!base) return "";
-  const sep = base.includes("?") ? "&" : "?";
-  return `${base}${sep}employee=1`;
-});
+const employeeLink = computed(() => withEmployeeQuery(publicUrl.value));
 
 const company = computed(() => appConfig.company ?? {
   name: "Afriland First Bank",

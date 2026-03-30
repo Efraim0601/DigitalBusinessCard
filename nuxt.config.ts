@@ -1,7 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 const disableFonts = process.env.NUXT_DISABLE_FONTS === "1" || process.env.NUXT_DISABLE_FONTS === "true";
-
 export default defineNuxtConfig({
   devtools: { enabled: true },
   devServer: {

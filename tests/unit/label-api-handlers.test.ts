@@ -123,4 +123,78 @@ describe("server/utils/label-api-handlers", () => {
     const res = await handler(e);
     expect(res).toEqual({ success: true });
   });
+
+  it("labelsPostHandler 503 si table PostgreSQL absente", async () => {
+    queryMock.mockRejectedValueOnce(Object.assign(new Error('relation "x" does not exist'), { code: "42P01" }));
+    const handler = labelsPostHandler("departments");
+    const request = new Request("http://localhost/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label_fr: "a", label_en: "b" }),
+    });
+    const res = await handler(evt(request));
+    expect(res).toEqual(
+      expect.objectContaining({
+        error: expect.stringContaining("departments"),
+      })
+    );
+  });
+
+  it("labelsPostHandler propage une erreur non liaison", async () => {
+    queryMock.mockRejectedValueOnce(new Error("disk full"));
+    const handler = labelsPostHandler("departments");
+    const request = new Request("http://localhost/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label_fr: "a", label_en: "b" }),
+    });
+    await expect(handler(evt(request))).rejects.toThrow("disk full");
+  });
+
+  it("labelsPutHandler 404 si enregistrement introuvable", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    const handler = labelsPutHandler("job_titles", "Introuvable");
+    const e = evt(
+      new Request("http://localhost/", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label_fr: "x" }),
+      })
+    );
+    e.context.params = { id: "bad" };
+    const res = await handler(e);
+    expect(res).toEqual({ error: "Introuvable" });
+  });
+
+  it("labelsPutHandler met à jour label_en seul", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [{ id: "1", label_fr: "a", label_en: "z", created_at: "t" }],
+    });
+    const handler = labelsPutHandler("departments", "x");
+    const e = evt(
+      new Request("http://localhost/", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label_en: "z" }),
+      })
+    );
+    e.context.params = { id: "1" };
+    const row = await handler(e);
+    expect(row).toMatchObject({ label_en: "z" });
+  });
+
+  it("labelsDeleteHandler 400 sans id", async () => {
+    const handler = labelsDeleteHandler("departments", "nf");
+    const res = await handler(evt(new Request("http://localhost/", { method: "DELETE" })));
+    expect(res).toEqual({ error: "id is required" });
+  });
+
+  it("labelsDeleteHandler 404 si déjà supprimé", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    const handler = labelsDeleteHandler("departments", "gone");
+    const e = evt(new Request("http://localhost/", { method: "DELETE" }));
+    e.context.params = { id: "1" };
+    const res = await handler(e);
+    expect(res).toEqual({ error: "gone" });
+  });
 });
