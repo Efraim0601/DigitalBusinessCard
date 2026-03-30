@@ -23,7 +23,7 @@ const getQRAsFile = (): Promise<File | null> => {
     }
     const serializer = new XMLSerializer();
     let svgStr = serializer.serializeToString(svg);
-    svgStr = svgStr.replace(/var\(--ui-text-highlighted\)/g, "white");
+    svgStr = svgStr.replaceAll("var(--ui-text-highlighted)", "white");
     const svgBlob = new Blob([svgStr], { type: "image/svg+xml" });
     const svgUrl = URL.createObjectURL(svgBlob);
     const img = new Image();
@@ -55,7 +55,7 @@ const downloadSVG = () => {
   if (!svg) return;
   const serializer = new XMLSerializer();
   let svgStr = serializer.serializeToString(svg);
-  svgStr = svgStr.replace(/var\(--ui-text-highlighted\)/g, "white");
+  svgStr = svgStr.replaceAll("var(--ui-text-highlighted)", "white");
   const svgBlob = new Blob([svgStr], { type: "image/svg+xml" });
   const svgUrl = URL.createObjectURL(svgBlob);
   const img = new Image();
@@ -71,7 +71,7 @@ const downloadSVG = () => {
     link.download = "qr-code.webp";
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
     URL.revokeObjectURL(svgUrl);
   };
   img.src = svgUrl;
@@ -109,7 +109,7 @@ const downloadVCard = async () => {
     a.rel = "noopener";
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(vcardUrl), 500);
   };
 
@@ -141,5 +141,3 @@ defineExpose({
     <Qrcode id="QRcode" :value="url" class="w-[90%] h-[90%]" variant="circle" />
   </div>
 </template>
-
-<style></style>

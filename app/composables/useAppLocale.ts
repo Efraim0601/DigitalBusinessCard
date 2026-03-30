@@ -20,15 +20,15 @@ export function useAppLocale() {
     let text = dict[key] ?? translations.fr[key] ?? key;
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
-        text = text.replace(new RegExp(`\\{${k}\\}`, "g"), v);
+        text = text.replaceAll(`{${k}}`, v);
       });
     }
     return text;
   }
 
-  if (typeof window !== "undefined") {
+  if (typeof globalThis !== "undefined") {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
+      const stored = globalThis.localStorage?.getItem(STORAGE_KEY) as Locale | null;
       if (stored === "fr" || stored === "en") locale.value = stored;
     } catch {}
   }

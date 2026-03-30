@@ -19,43 +19,24 @@ const newCard = ref<Card>({
 });
 
 const url = computed(() => {
-  const faxStr = newCard.value.fax ? `&fax=${encodeURIComponent(newCard.value.fax)}` : "";
-  const mobileStr = newCard.value.mobile ? `&mobile=${encodeURIComponent(newCard.value.mobile)}` : "";
-  return `${baseURL.value}?color=${
-    appConfig.ui.colors.primary
-  }&type=view&fName=${formatFName()}&lName=${formatLName()}&email=${
-    newCard.value.email
-  }&phone=${formatPhone()}${faxStr}${mobileStr}&co=${formatCompany()}&title=${formatTitle()}`;
+  const params = new URLSearchParams();
+  params.set("color", String(appConfig.ui.colors.primary));
+  params.set("type", "view");
+  if (newCard.value.fName) params.set("fName", newCard.value.fName.trim());
+  if (newCard.value.lName) params.set("lName", newCard.value.lName.trim());
+  if (newCard.value.email) params.set("email", newCard.value.email.trim());
+  if (newCard.value.phone) params.set("phone", newCard.value.phone.trim());
+  if (newCard.value.fax) params.set("fax", newCard.value.fax.trim());
+  if (newCard.value.mobile) params.set("mobile", newCard.value.mobile.trim());
+  if (newCard.value.co) params.set("co", newCard.value.co.trim());
+  if (newCard.value.title) params.set("title", newCard.value.title.trim());
+  const qs = params.toString();
+  return qs ? `${baseURL.value}?${qs}` : baseURL.value;
 });
 
 const formatEmail = () => {
   if (newCard.value.email) {
-    newCard.value.email = newCard.value.email.replace(/ /g, "");
-  }
-};
-const formatPhone = () => {
-  if (newCard.value.phone) {
-    return newCard.value.phone.replace(/ /g, "%20");
-  }
-};
-const formatCompany = () => {
-  if (newCard.value.co) {
-    return newCard.value.co.replace(/ /g, "%20");
-  }
-};
-const formatTitle = () => {
-  if (newCard.value.title) {
-    return newCard.value.title.replace(/ /g, "%20");
-  }
-};
-const formatFName = () => {
-  if (newCard.value.fName) {
-    return newCard.value.fName.replace(/ /g, "%20");
-  }
-};
-const formatLName = () => {
-  if (newCard.value.lName) {
-    return newCard.value.lName.replace(/ /g, "%20");
+    newCard.value.email = newCard.value.email.replaceAll(" ", "");
   }
 };
 
@@ -88,7 +69,7 @@ const hydrateFromQuery = () => {
 };
 
 onMounted(() => {
-  baseURL.value = `${window.location.origin}${window.location.pathname}`;
+  baseURL.value = `${globalThis.location?.origin ?? ""}${globalThis.location?.pathname ?? ""}`;
 });
 
 watch(
@@ -142,5 +123,3 @@ watch(
     </UForm>
   </div>
 </template>
-
-<style></style>

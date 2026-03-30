@@ -11,7 +11,10 @@ const CARD_WIDTH = 600;
 const CARD_HEIGHT = 340;
 const cardScale = ref(1);
 const updateScale = () => {
-  const availableWidth = typeof window !== "undefined" ? Math.max(280, window.innerWidth - 24) : CARD_WIDTH;
+  const availableWidth =
+    typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined"
+      ? Math.max(280, globalThis.window.innerWidth - 24)
+      : CARD_WIDTH;
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
@@ -34,20 +37,29 @@ const route = useRoute();
 const FIXED_PHONE = "222 233 068";
 const FIXED_FAX = "222 221 785";
 
+function nextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
 const publicUrl = computed(() => {
-  if (typeof window === "undefined") return "";
+  if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
   const params = new URLSearchParams(route.query as Record<string, string>);
   params.delete("owner");
   params.delete("employee");
   const search = params.toString();
-  return `${window.location.origin}${route.path}${search ? `?${search}` : ""}`;
+  const suffix = search ? `?${search}` : "";
+  return `${globalThis.window.location.origin}${route.path}${suffix}`;
 });
 
 /** Lien pour l'employé (RH envoie à Marco) : accès à la carte + QR code, sans droit d'édition. */
 const employeeLink = computed(() => {
   const base = publicUrl.value;
-  return base ? `${base}${base.includes("?") ? "&" : "?"}employee=1` : "";
+  if (!base) return "";
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}employee=1`;
 });
 
 const company = computed(() => appConfig.company ?? {
@@ -89,15 +101,15 @@ const shareTitle = computed(() => {
   return name ? t("share.cardTitle", { name }) : t("share.cardTitleDefault");
 });
 const shareUrl = computed(() => {
-  if (typeof window === "undefined") return "";
+  if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
   // Lien partagé = page de login, pas la carte directe
-  return `${window.location.origin}/`;
+  return `${globalThis.window.location.origin}/`;
 });
 
 /** URL courte pour partage : ici on partage également la page de login. */
 function buildShortShareUrl(): string {
-  if (typeof window === "undefined") return "";
-  return `${window.location.origin}/`;
+  if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
+  return `${globalThis.window.location.origin}/`;
 }
 const shareUrlShort = computed(() => buildShortShareUrl());
 
@@ -139,16 +151,12 @@ function waitForBackgroundImage(url: string | undefined): Promise<void> {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       // Laisser le navigateur peindre le fond avant la capture
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => resolve());
-      });
+      nextPaint().then(resolve);
     };
     img.onerror = () => resolve();
     img.src = url;
     if (img.complete) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => resolve());
-      });
+      nextPaint().then(resolve);
     }
   });
 }
@@ -199,7 +207,7 @@ async function downloadCardImage() {
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
     } catch {
       link.href = dataUrl;
@@ -249,7 +257,7 @@ async function shareCardImage() {
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       setTimeout(() => URL.revokeObjectURL(link.href), 100);
     }
   } catch (e) {
@@ -260,7 +268,9 @@ async function shareCardImage() {
 }
 
 async function copyLink() {
-  const linkToCopy = publicUrl.value || (typeof window !== "undefined" ? window.location.href : url.value);
+  const linkToCopy =
+    publicUrl.value ||
+    (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined" ? globalThis.window.location.href : url.value);
   try {
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(linkToCopy);
@@ -272,12 +282,12 @@ async function copyLink() {
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
-      document.body.removeChild(textarea);
+      textarea.remove();
     }
     copySuccess.value = true;
     setTimeout(() => { copySuccess.value = false; }, 2500);
   } catch (e) {
-    if (typeof window !== "undefined") window.prompt("Copiez ce lien :", linkToCopy);
+    if (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined") globalThis.window.prompt("Copiez ce lien :", linkToCopy);
     console.error("Copier le lien:", e);
   }
 }
@@ -302,7 +312,7 @@ async function shareQRCode() {
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       setTimeout(() => URL.revokeObjectURL(link.href), 100);
     }
   } catch (e) {
@@ -324,24 +334,24 @@ async function copyEmployeeLink() {
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
-      document.body.removeChild(textarea);
+      textarea.remove();
     }
     copySuccess.value = true;
     setTimeout(() => { copySuccess.value = false; }, 2500);
   } catch (e) {
-    if (typeof window !== "undefined") window.prompt("Copiez le lien employé :", linkToCopy);
+    if (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined") globalThis.window.prompt("Copiez le lien employé :", linkToCopy);
     console.error("Copier lien employé:", e);
   }
 }
 
 onMounted(() => {
-  url.value = window.location.href;
+  url.value = globalThis.location?.href ?? "waiting";
   updateScale();
-  window.addEventListener("resize", updateScale, { passive: true });
+  globalThis.window?.addEventListener("resize", updateScale, { passive: true });
 });
 
 onBeforeUnmount(() => {
-  if (typeof window !== "undefined") window.removeEventListener("resize", updateScale);
+  globalThis.window?.removeEventListener("resize", updateScale);
 });
 </script>
 
@@ -396,6 +406,13 @@ onBeforeUnmount(() => {
             <div class="text-[11px] text-[#222] leading-[1.7] font-[Arial,Helvetica,sans-serif]">
               <div v-if="company?.address" class="font-bold text-[11.5px]">{{ company.address }}</div>
               <table class="border-collapse">
+                <thead class="sr-only">
+                  <tr>
+                    <th scope="col">{{ t('card.bp') }}</th>
+                    <th scope="col">{{ t('card.email') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
                 <tr v-if="company?.addressComplement">
                   <td class="pr-2 align-top text-[11px] leading-[1.55] text-[#333] whitespace-nowrap">{{ t('card.bp') }}</td>
                   <td class="align-top text-[11px] leading-[1.55]">{{ company.addressComplement.replace(/^B\.P:\s*/i, "") }}</td>
@@ -418,10 +435,19 @@ onBeforeUnmount(() => {
                     </a>
                   </td>
                 </tr>
+                </tbody>
               </table>
             </div>
             <div class="text-[11px] text-[#222] text-right font-[Arial,Helvetica,sans-serif]">
               <table class="border-collapse">
+                <thead class="sr-only">
+                  <tr>
+                    <th scope="col">{{ t('card.phone') }}</th>
+                    <th scope="col">{{ t('card.fax') }}</th>
+                    <th scope="col">{{ t('card.mobile') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
                 <tr>
                   <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.phone') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
@@ -440,6 +466,7 @@ onBeforeUnmount(() => {
                     <a :href="`tel:${urlCard.mobile}`" class="text-[#222] hover:underline">{{ urlCard.mobile }}</a>
                   </td>
                 </tr>
+                </tbody>
               </table>
             </div>
           </div>

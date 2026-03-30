@@ -25,5 +25,3 @@ const showFloatingToolbar = computed(() => {
     <slot />
   </div>
 </template>
-
-<style></style>

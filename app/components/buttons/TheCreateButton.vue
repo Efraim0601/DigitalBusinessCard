@@ -2,7 +2,7 @@
 const url = ref("");
 
 onMounted(() => {
-  url.value = window.location.origin;
+  url.value = globalThis.location?.origin ?? "";
 });
 </script>
 
@@ -18,5 +18,3 @@ onMounted(() => {
     /></a>
   </div>
 </template>
-
-<style></style>

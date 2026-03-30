@@ -26,7 +26,7 @@ const primary = computed({
   set(option) {
     appConfig.ui.colors.primary = option;
 
-    window.localStorage.setItem("nuxt-ui-primary", appConfig.ui.colors.primary);
+    globalThis.localStorage?.setItem("nuxt-ui-primary", appConfig.ui.colors.primary);
   },
 });
 

@@ -38,8 +38,8 @@ const pageJobTitles = ref(1);
 function debounce<T extends (...args: any[]) => void>(fn: T, waitMs: number) {
   let t: number | undefined;
   return (...args: Parameters<T>) => {
-    if (t) window.clearTimeout(t);
-    t = window.setTimeout(() => fn(...args), waitMs);
+    if (t) globalThis.clearTimeout(t);
+    t = globalThis.setTimeout(() => fn(...args), waitMs) as unknown as number;
   };
 }
 
