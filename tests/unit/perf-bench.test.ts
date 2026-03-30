@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
 
 /**
  * Minimal unit tests for the perf script logic.
