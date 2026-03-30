@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { Card } from "~~/types/card";
+import { buildPublicCardUrl } from "~/utils/card-urls";
 import { translateCardTitle, translateCardDepartment } from "~/locales/card-value-translations";
 
 const url = ref("waiting");
@@ -18,10 +19,9 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard, isCreator = false, isEmployee = false } = defineProps<{
+const { urlCard, isCreator = false } = defineProps<{
   urlCard: Card;
   isCreator?: boolean;
-  isEmployee?: boolean;
 }>();
 
 const { t, locale } = useAppLocale();
@@ -34,7 +34,7 @@ const displayedDepartment = computed(() => {
   return translateCardDepartment(urlCard.co, locale.value);
 });
 const route = useRoute();
-const FIXED_PHONE = "222 233 068";
+const FIXED_PHONE = "675 878 034";
 const FIXED_FAX = "222 221 785";
 
 function nextPaint(): Promise<void> {
@@ -46,12 +46,11 @@ function nextPaint(): Promise<void> {
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
 const publicUrl = computed(() => {
   if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
-  const params = new URLSearchParams(route.query as Record<string, string>);
-  params.delete("owner");
-  params.delete("employee");
-  const search = params.toString();
-  const suffix = search ? `?${search}` : "";
-  return `${globalThis.window.location.origin}${route.path}${suffix}`;
+  return buildPublicCardUrl(
+    globalThis.window.location.origin,
+    route.path,
+    route.query as Record<string, string | string[] | undefined>
+  );
 });
 
 /** Lien pour l'employé (RH envoie à Marco) : accès à la carte + QR code, sans droit d'édition. */

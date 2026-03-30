@@ -1,23 +1,8 @@
+/**
+ * Carte (aperçu / QR). `color` suit les tokens Nuxt UI (`primary`, `blue`, etc.).
+ */
 export interface Card {
-  color:
-    | "red"
-    | "orange"
-    | "amber"
-    | "yellow"
-    | "lime"
-    | "green"
-    | "emerald"
-    | "teal"
-    | "cyan"
-    | "sky"
-    | "blue"
-    | "indigo"
-    | "violet"
-    | "purple"
-    | "fuchsia"
-    | "pink"
-    | "rose"
-    | string;
+  color: string;
   title?: string;
   fName: string;
   lName: string;

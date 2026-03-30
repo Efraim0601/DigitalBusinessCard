@@ -7,13 +7,16 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "json-summary", "html"],
+      reporter: ["text", "json-summary", "html", "lcov"],
       reportsDirectory: "coverage",
       exclude: [
         "node_modules/**",
         ".nuxt/**",
         ".output/**",
         "perf-reports/**",
+        "tests/**",
+        "**/*.config.*",
+        "**/*.d.ts",
       ],
     },
   },

@@ -75,7 +75,6 @@ const TheViewComponent = defineAsyncComponent(() => import("~/components/TheView
         v-else-if="card"
         :url-card="card"
         :is-creator="false"
-        :is-employee="route.query.employee === '1'"
       />
     </div>
   </div>

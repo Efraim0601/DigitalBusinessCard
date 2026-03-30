@@ -11,7 +11,9 @@ export function useAppLocale() {
     if (import.meta.client) {
       try {
         localStorage.setItem(STORAGE_KEY, value);
-      } catch {}
+      } catch {
+        /* navigateur privé / quota : conserver la locale en mémoire seulement */
+      }
     }
   }
 
@@ -30,7 +32,9 @@ export function useAppLocale() {
     try {
       const stored = globalThis.localStorage?.getItem(STORAGE_KEY) as Locale | null;
       if (stored === "fr" || stored === "en") locale.value = stored;
-    } catch {}
+    } catch {
+      /* lecture stockage impossible */
+    }
   }
 
   return { locale, setLocale, t };

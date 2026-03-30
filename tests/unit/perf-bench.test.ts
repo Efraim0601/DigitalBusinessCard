@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -7,7 +8,6 @@ import { describe, expect, it } from "vitest";
  */
 
 function runNodeScript(scriptPath: string, args: string[] = [], env: Record<string, string> = {}) {
-  const { spawnSync } = require("node:child_process");
   return spawnSync(process.execPath, [scriptPath, ...args], {
     env: { ...process.env, ...env },
     encoding: "utf8",

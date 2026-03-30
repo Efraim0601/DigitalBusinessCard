@@ -311,7 +311,6 @@ async function main() {
   const results = [];
 
   for (const s of scenarios) {
-    // eslint-disable-next-line no-await-in-loop
     const r = await runScenario({ ...s, timeoutMs });
     results.push(r);
     console.log(
@@ -320,7 +319,6 @@ async function main() {
   }
 
   for (let run = 1; run <= runs; run++) {
-    // eslint-disable-next-line no-await-in-loop
     const r = await runScenario({
       name: `SSR home with email (run ${run}/${runs}, conc=20, total=120)`,
       url: `${baseUrl}/?email=${encodedEmail}`,

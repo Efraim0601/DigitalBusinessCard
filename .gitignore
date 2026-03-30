@@ -18,6 +18,12 @@ logs
 .fleet
 .idea
 
+# Tests & analyse locale
+coverage/
+.scannerwork/
+perf-reports/
+perf-reports-test/
+
 # Local env files
 .env
 .env.*
