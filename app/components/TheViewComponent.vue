@@ -31,7 +31,7 @@ const displayedDepartment = computed(() => {
   return translateCardDepartment(urlCard.co, locale.value);
 });
 const route = useRoute();
-const FIXED_PHONE = "675 878 034";
+const FIXED_PHONE = "222 233 068";
 const FIXED_FAX = "222 221 785";
 
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
