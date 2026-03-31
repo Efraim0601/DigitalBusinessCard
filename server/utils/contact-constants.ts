@@ -1,4 +1,4 @@
-export const FIXED_PHONE = "675 878 034";
+export const FIXED_PHONE = "222 233 068";
 export const FIXED_FAX = "222 221 785";
 
 export function formatGroupedNumber(value: string | null | undefined): string {

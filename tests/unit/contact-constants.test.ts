@@ -3,7 +3,7 @@ import { FIXED_FAX, FIXED_PHONE, formatGroupedNumber } from "../../server/utils/
 
 describe("server/utils/contact-constants", () => {
   it("exposes fixed bank phone and fax", () => {
-    expect(FIXED_PHONE).toBe("675 878 034");
+    expect(FIXED_PHONE).toBe("222 233 068");
     expect(FIXED_FAX).toBe("222 221 785");
   });
 

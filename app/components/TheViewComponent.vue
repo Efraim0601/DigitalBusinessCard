@@ -36,7 +36,7 @@ const displayedDepartment = computed(() => {
   return translateCardDepartment(urlCard.co, locale.value);
 });
 const route = useRoute();
-const FIXED_PHONE = "675 878 034";
+const FIXED_PHONE = "222 233 068";
 const FIXED_FAX = "222 221 785";
 
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
@@ -444,7 +444,7 @@ defineExpose({
                 <tr>
                   <td class="pl-1.5 text-left text-[#333] text-[11px] leading-[1.55] whitespace-nowrap">{{ t('card.phone') }}</td>
                   <td class="pl-1.5 text-[11px] leading-[1.55] whitespace-nowrap">
-                    <a href="tel:675878034" class="text-[#222] hover:underline">{{ FIXED_PHONE }}</a>
+                    <a href="tel:222 233 068" class="text-[#222] hover:underline">{{ FIXED_PHONE }}</a>
                   </td>
                 </tr>
                 <tr>
@@ -573,7 +573,7 @@ defineExpose({
       </button>
       <a
         v-if="(urlCard.mobile || FIXED_PHONE) && (urlCard.mobile !== '' || FIXED_PHONE !== '')"
-        :href="`tel:${urlCard.mobile || '675878034'}`"
+        :href="`tel:${urlCard.mobile || '222 233 068'}`"
         class="card-cta-icon"
         :title="t('action.call')"
       >

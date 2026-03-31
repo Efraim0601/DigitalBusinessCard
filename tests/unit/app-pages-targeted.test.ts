@@ -159,7 +159,7 @@ describe("app/pages/admin/cards.vue", () => {
     await createBtn?.trigger("click");
     await flushPromises();
     expect(w.text()).toContain("admin.createCardForm");
-    expect(w.html()).toContain("675 878 034");
+    expect(w.html()).toContain("222 233 068");
     expect(w.html()).toContain("222 221 785");
   });
 
@@ -195,7 +195,7 @@ describe("app/pages/admin/cards.vue", () => {
     await row.trigger("click");
     await flushPromises();
     expect(w.html()).toContain("690 111 222");
-    expect(w.html()).toContain("675 878 034");
+    expect(w.html()).toContain("222 233 068");
     expect(w.html()).toContain("222 221 785");
   });
 

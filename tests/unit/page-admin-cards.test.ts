@@ -108,7 +108,7 @@ describe("app/pages/admin/cards.vue", () => {
       method: "POST",
       body: expect.objectContaining({
         email: "john@example.com",
-        phone: "675 878 034",
+        phone: "222 233 068",
         fax: "222 221 785",
         mobile: "699 112 233",
       }),
@@ -119,7 +119,7 @@ describe("app/pages/admin/cards.vue", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/cards/c1", {
       method: "PUT",
       body: expect.objectContaining({
-        phone: "675 878 034",
+        phone: "222 233 068",
         fax: "222 221 785",
       }),
     });

@@ -2,7 +2,7 @@
 definePageMeta({ middleware: "admin-auth" });
 
 const { t, locale } = useAppLocale();
-const FIXED_PHONE = "675 878 034";
+const FIXED_PHONE = "222 233 068";
 const FIXED_FAX = "222 221 785";
 
 const activeTab = ref<"cards" | "departments" | "job_titles">("cards");
