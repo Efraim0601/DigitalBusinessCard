@@ -86,17 +86,17 @@ async function go() {
               :placeholder="t('login.emailPlaceholder')"
             />
           </UFormField>
-          <UFormField :label="t('login.passwordLabel')" name="password" class="w-full">
+          <UFormField :label="t('login.adminSecretLabel')" name="password" class="w-full">
             <UInput
               v-model="password"
               type="password"
               class="w-full"
               autocomplete="current-password"
-              :placeholder="t('login.passwordPlaceholder')"
+              :placeholder="t('login.adminSecretPlaceholder')"
             />
           </UFormField>
           <p class="text-[11px] text-slate-500 -mt-1">
-            {{ t('login.passwordHint') }}
+            {{ t('login.adminSecretHint') }}
           </p>
           <p v-if="error" class="text-xs text-red-500">
             {{ error }}

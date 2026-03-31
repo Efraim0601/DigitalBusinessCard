@@ -1,13 +1,20 @@
+# syntax=docker/dockerfile:1.7
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
 ENV NUXT_DISABLE_FONTS=1
 
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
-COPY . .
+COPY app ./app
+COPY public ./public
+COPY server ./server
+COPY scripts ./scripts
+COPY types ./types
+COPY nuxt.config.ts ./nuxt.config.ts
+COPY tsconfig.json ./tsconfig.json
 
 RUN npm run build
 
@@ -19,14 +26,7 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appgroup \
   && adduser -S -u 1001 -G appgroup appuser
 
-COPY --from=build /app/.output ./.output
-COPY --from=build /app/package.json ./package.json
-
-# Copie en root puis droits lecture seule : évite les hotspots « write sur ressources copiées »
-RUN chown -R appuser:appgroup /app \
-  && find /app/.output -type d -exec chmod 555 {} \; \
-  && find /app/.output -type f -exec chmod 444 {} \; \
-  && chmod 444 /app/package.json
+COPY --from=build --chmod=0555 /app/.output ./.output
 
 USER appuser
 
