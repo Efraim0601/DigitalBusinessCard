@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { preflightCheck, runScenario, timedRequest } from "../../scripts/perf-bench.mjs";
 
 /**
  * Minimal unit tests for the perf script logic.
@@ -15,6 +16,60 @@ function runNodeScript(scriptPath: string, args: string[] = [], env: Record<stri
 }
 
 describe("scripts/perf-bench.mjs", () => {
+  it("timedRequest returns response metadata", async () => {
+    const originalFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+      arrayBuffer: vi.fn().mockResolvedValue(new Uint8Array([1, 2]).buffer),
+    }));
+    const out = await timedRequest("http://example.test", { timeoutMs: 1000 });
+    expect(out).toMatchObject({ ok: true, status: 204, bytes: 2 });
+    vi.stubGlobal("fetch", originalFetch);
+  });
+
+  it("runScenario aggregates successes and failures", async () => {
+    const originalFetch = globalThis.fetch;
+    let count = 0;
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => {
+      count += 1;
+      if (count % 2 === 0) throw new Error("network");
+      return {
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => new ArrayBuffer(8),
+      };
+    }));
+    const r = await runScenario({
+      name: "scenario",
+      url: "http://example.test",
+      total: 4,
+      concurrency: 2,
+      warmup: 0,
+      timeoutMs: 1000,
+    });
+    expect(r.stats.okCount + r.stats.errCount).toBe(4);
+    expect(r.topStatuses.length).toBeGreaterThan(0);
+    vi.stubGlobal("fetch", originalFetch);
+  });
+
+  it("preflightCheck retries before returning failure", async () => {
+    const originalFetch = globalThis.fetch;
+    let calls = 0;
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("down");
+      return {
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => new ArrayBuffer(0),
+      };
+    }));
+    const out = await preflightCheck(["http://example.test"], { timeoutMs: 1000, attempts: 2 });
+    expect(out.ok).toBe(true);
+    vi.stubGlobal("fetch", originalFetch);
+  });
+
   it("fails fast when preflight cannot reach BASE_URL", () => {
     const res = runNodeScript(
       "scripts/perf-bench.mjs",

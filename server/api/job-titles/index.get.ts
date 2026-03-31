@@ -1,3 +1,4 @@
 import { labelsListHandler } from "../../utils/label-api-handlers";
 
-export default labelsListHandler("job_titles");
+const listJobTitles = labelsListHandler("job_titles");
+export default listJobTitles;

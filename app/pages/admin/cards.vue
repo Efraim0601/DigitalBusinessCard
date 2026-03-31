@@ -324,9 +324,9 @@ const debouncedReloadJobTitles = debounce(() => {
   loadJobTitles();
 }, 300);
 
-watch(searchCards, () => import.meta.client && debouncedReloadCards());
-watch(searchDepartments, () => import.meta.client && debouncedReloadDepartments());
-watch(searchJobTitles, () => import.meta.client && debouncedReloadJobTitles());
+watch(searchCards, () => typeof globalThis.window !== "undefined" && debouncedReloadCards());
+watch(searchDepartments, () => typeof globalThis.window !== "undefined" && debouncedReloadDepartments());
+watch(searchJobTitles, () => typeof globalThis.window !== "undefined" && debouncedReloadJobTitles());
 
 watch(pageCards, () => loadCards());
 watch(pageDepartments, () => loadDepartments());

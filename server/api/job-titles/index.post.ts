@@ -1,3 +1,4 @@
 import { labelsPostHandler } from "../../utils/label-api-handlers";
 
-export default labelsPostHandler("job_titles");
+const postJobTitle = labelsPostHandler("job_titles");
+export default postJobTitle;

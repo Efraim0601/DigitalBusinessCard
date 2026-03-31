@@ -1,12 +1,11 @@
-export default defineNuxtRouteMiddleware(async (to) => {
-  if (!to.path.startsWith("/admin")) return;
+import { shouldBlockAdminRoute } from "~/utils/admin-route-guard";
 
-  try {
-    const headers = import.meta.server ? useRequestHeaders(["cookie"]) : undefined;
-    const res = await $fetch<{ authenticated: boolean }>("/api/auth/admin/me", { headers });
-    if (!res?.authenticated) return navigateTo("/");
-  } catch {
-    return navigateTo("/");
-  }
+export default defineNuxtRouteMiddleware(async (to) => {
+  const block = await shouldBlockAdminRoute(to.path, () =>
+    $fetch<{ authenticated: boolean }>("/api/auth/admin/me", {
+      headers: import.meta.server ? useRequestHeaders(["cookie"]) : undefined,
+    })
+  );
+  if (block) return navigateTo("/");
 });
 

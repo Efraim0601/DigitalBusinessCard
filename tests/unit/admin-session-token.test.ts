@@ -37,6 +37,12 @@ describe("server/utils/admin-session-token", () => {
     expect(parseAdminSessionToken("a.b.c", secret)).toBeNull();
   });
 
+  it("rejects valid signature but non-JSON payload", () => {
+    const encodedPayload = Buffer.from("not-json", "utf8").toString("base64url");
+    const sig = signSessionBlob(encodedPayload, secret);
+    expect(parseAdminSessionToken(`${encodedPayload}.${sig}`, secret)).toBeNull();
+  });
+
   it("signSessionBlob is deterministic for same inputs", () => {
     const encoded = "eyJlbWFpbCI6ImEifQ";
     expect(signSessionBlob(encoded, secret)).toBe(signSessionBlob(encoded, secret));

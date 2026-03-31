@@ -7,20 +7,37 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pdf } from "pdf-to-img";
+import { cardBgPaths } from "./lib/generate-card-bg-paths.mjs";
+import { generateCardBackgroundToFile } from "./lib/generate-card-bg-run.mjs";
+import { isScriptPrimary } from "./lib/cli-is-primary.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
-const pdfPath = join(root, "app", "assets", "Carte_digitale 1.pdf");
-const outPath = join(root, "public", "carte-digitale-bg.png");
 
-try {
-  const doc = await pdf(pdfPath, { scale: 2 });
-  const firstPage = await doc.getPage(1);
-  if (!firstPage) throw new Error("Aucune page dans le PDF");
-  await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, firstPage);
-  console.log("OK: public/carte-digitale-bg.png généré.");
-} catch (e) {
-  console.error("Erreur:", e?.message || String(e));
-  process.exit(1);
+export async function runGenerateCardBg(deps) {
+  const {
+    root: repoRoot,
+    pdf: pdfFn,
+    writeFile: wf,
+    mkdir: md,
+    generate = generateCardBackgroundToFile,
+  } = deps;
+  const { pdfPath, outPath } = cardBgPaths(repoRoot);
+  await generate({
+    pdfPath,
+    outPath,
+    pdf: pdfFn,
+    writeFile: wf,
+    mkdir: md,
+  });
+}
+
+if (isScriptPrimary(import.meta.url)) {
+  try {
+    await runGenerateCardBg({ root, pdf, writeFile, mkdir });
+    console.log("OK: public/carte-digitale-bg.png généré.");
+  } catch (e) {
+    console.error("Erreur:", e?.message || String(e));
+    process.exit(1);
+  }
 }

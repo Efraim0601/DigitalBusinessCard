@@ -1,3 +1,4 @@
 import { labelsPostHandler } from "../../utils/label-api-handlers";
 
-export default labelsPostHandler("departments");
+const postDepartment = labelsPostHandler("departments");
+export default postDepartment;

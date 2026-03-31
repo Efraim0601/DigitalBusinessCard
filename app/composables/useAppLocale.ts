@@ -1,16 +1,20 @@
 import type { Locale } from "~/locales/translations";
-import { translations } from "~/locales/translations";
-
-const STORAGE_KEY = "vcard-locale";
+import {
+  LOCALE_STORAGE_KEY,
+  normalizeStoredLocale,
+  translateWithFallback,
+} from "~/utils/app-locale-core";
 
 export function useAppLocale() {
   const locale = useState<Locale>("app-locale", () => "fr");
+  const canUseStorage = () =>
+    typeof globalThis !== "undefined" && typeof globalThis.localStorage !== "undefined";
 
   function setLocale(value: Locale) {
     locale.value = value;
-    if (import.meta.client) {
+    if (canUseStorage()) {
       try {
-        localStorage.setItem(STORAGE_KEY, value);
+        localStorage.setItem(LOCALE_STORAGE_KEY, value);
       } catch {
         /* navigateur privé / quota : conserver la locale en mémoire seulement */
       }
@@ -18,20 +22,13 @@ export function useAppLocale() {
   }
 
   function t(key: string, params?: Record<string, string>): string {
-    const dict = translations[locale.value];
-    let text = dict[key] ?? translations.fr[key] ?? key;
-    if (params) {
-      Object.entries(params).forEach(([k, v]) => {
-        text = text.replaceAll(`{${k}}`, v);
-      });
-    }
-    return text;
+    return translateWithFallback(locale.value, key, params);
   }
 
   if (typeof globalThis !== "undefined") {
     try {
-      const stored = globalThis.localStorage?.getItem(STORAGE_KEY) as Locale | null;
-      if (stored === "fr" || stored === "en") locale.value = stored;
+      const stored = normalizeStoredLocale(globalThis.localStorage?.getItem(LOCALE_STORAGE_KEY));
+      if (stored) locale.value = stored;
     } catch {
       /* lecture stockage impossible */
     }

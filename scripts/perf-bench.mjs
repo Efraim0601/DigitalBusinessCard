@@ -14,47 +14,12 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { performance } from "node:perf_hooks";
+import { buildPerfPreflightUrls, resolvePerfBenchCliOptions } from "./lib/perf-bench-config.mjs";
+import { isScriptPrimary } from "./lib/cli-is-primary.mjs";
+import { fmtMs, nowStamp, percentile } from "./lib/perf-bench-stats.mjs";
+import { renderMarkdownReport } from "./lib/perf-bench-report.mjs";
 
-function parseArgs(argv) {
-  const args = {};
-  for (let i = 2; i < argv.length; i++) {
-    const a = argv[i];
-    if (a.startsWith("--")) {
-      const key = a.slice(2);
-      const next = argv[i + 1];
-      if (next && !next.startsWith("--")) {
-        args[key] = next;
-        i++;
-      } else {
-        args[key] = true;
-      }
-    }
-  }
-  return args;
-}
-
-function percentile(sorted, p) {
-  if (sorted.length === 0) return null;
-  const idx = (p / 100) * (sorted.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  const w = idx - lo;
-  return sorted[lo] * (1 - w) + sorted[hi] * w;
-}
-
-function fmtMs(x) {
-  if (x == null || Number.isNaN(x)) return "n/a";
-  return `${x.toFixed(2)}ms`;
-}
-
-function nowStamp() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-}
-
-async function timedRequest(url, { timeoutMs, method = "GET" }) {
+export async function timedRequest(url, { timeoutMs, method = "GET" }) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   const start = performance.now();
@@ -93,7 +58,7 @@ async function timedRequest(url, { timeoutMs, method = "GET" }) {
   }
 }
 
-async function runScenario({ name, url, total, concurrency, warmup, timeoutMs }) {
+export async function runScenario({ name, url, total, concurrency, warmup, timeoutMs }) {
   // Warmup sequentially (helps reduce cold spikes)
   for (let i = 0; i < warmup; i++) {
     await timedRequest(url, { timeoutMs }).catch(() => {});
@@ -168,7 +133,7 @@ async function runScenario({ name, url, total, concurrency, warmup, timeoutMs })
   };
 }
 
-async function preflightCheck(urls, { timeoutMs, attempts }) {
+export async function preflightCheck(urls, { timeoutMs, attempts }) {
   for (const url of urls) {
     let last = null;
     for (let i = 0; i < attempts; i++) {
@@ -184,52 +149,16 @@ async function preflightCheck(urls, { timeoutMs, attempts }) {
   return { ok: true };
 }
 
-function renderMarkdownReport(meta, results) {
-  const header = `# vcard Performance Report
-
-Generated: ${meta.generatedAt}
-Node: ${meta.node}
-Base URL: ${meta.baseUrl}
-Email: ${meta.email}
-Timeout: ${meta.timeoutMs}ms
-`;
-
-  const lines = [];
-  for (const r of results) {
-    const s = r.stats;
-    const sampleErrors =
-      r.sampleErrors?.length
-        ? `- Sample errors: \n${r.sampleErrors
-            .map((e) => {
-              const name = e.error?.name || "Error";
-              const message = e.error?.message || "";
-              return `  - ${name} (${e.status}) at #${e.at}: ${message}`;
-            })
-            .join("\n")}\n`
-        : "";
-    lines.push(
-      `\n## ${r.name}
-- URL: ${r.url}
-- Total: ${r.total} | Concurrency: ${r.concurrency} | Warmup: ${r.warmup}
-- Duration: ${fmtMs(r.durationMs)}
-- Errors: ${s.errCount}/${r.total}
-- Latency: p50 ${fmtMs(s.p50Ms)} | p95 ${fmtMs(s.p95Ms)} | p99 ${fmtMs(s.p99Ms)} | p99.9 ${fmtMs(s.p999Ms)}
-${sampleErrors}`
-    );
-  }
-
-  return header + lines.join("\n");
-}
-
 async function main() {
-  const args = parseArgs(process.argv);
-  const baseUrl = String(args.base || process.env.BASE_URL || "http://localhost:8766");
-  const email = String(args.email || process.env.EMAIL || "demo@afrilandfirstbank.com");
-  const timeoutMs = Number(args.timeoutMs || process.env.TIMEOUT_MS || 15000);
-  const runs = Number(args.runs || process.env.SSR_RUNS || 1);
-  const outputDir = String(args.outputDir || process.env.OUTPUT_DIR || "perf-reports");
-  const skipPreflight = Boolean(args.skipPreflight || process.env.SKIP_PREFLIGHT);
-  const preflightAttempts = Number(args.preflightAttempts || process.env.PREFLIGHT_ATTEMPTS || 3);
+  const {
+    baseUrl,
+    email,
+    timeoutMs,
+    runs,
+    outputDir,
+    skipPreflight,
+    preflightAttempts,
+  } = resolvePerfBenchCliOptions(process.argv, process.env);
 
   fs.mkdirSync(outputDir, { recursive: true });
   const stamp = nowStamp();
@@ -240,12 +169,7 @@ async function main() {
   const cardByEmail = `${baseUrl}/api/cards?email=${encodedEmail}`;
 
   if (!skipPreflight) {
-    const checkUrls = [
-      `${baseUrl}/api/cards?limit=1&offset=0`,
-      `${baseUrl}/api/departments`,
-      `${baseUrl}/api/job-titles`,
-      `${baseUrl}/?email=${encodedEmail}`,
-    ];
+    const checkUrls = buildPerfPreflightUrls(baseUrl, encodedEmail);
     console.log(`Preflight check (${preflightAttempts} attempts each)...`);
     const pre = await preflightCheck(checkUrls, { timeoutMs: Math.min(5000, timeoutMs), attempts: preflightAttempts });
     if (!pre.ok) {
@@ -356,10 +280,14 @@ async function main() {
   console.log(`MD report:   ${reportMdPath}`);
 }
 
-try {
-  await main();
-} catch (e) {
-  console.error("Benchmark failed:", e);
-  process.exit(1);
+export { main as runPerfBenchMain };
+
+if (isScriptPrimary(import.meta.url)) {
+  try {
+    await main();
+  } catch (e) {
+    console.error("Benchmark failed:", e);
+    process.exit(1);
+  }
 }
 

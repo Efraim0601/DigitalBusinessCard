@@ -109,6 +109,54 @@ const shareText = computed(() => {
 
 const sharePopoverOpen = ref(false);
 
+function isBrowserRuntime() {
+  return typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined";
+}
+
+function markCopySuccess() {
+  copySuccess.value = true;
+  setTimeout(() => {
+    copySuccess.value = false;
+  }, 2500);
+}
+
+async function copyTextWithFallback(text: string, promptMessage: string) {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    markCopySuccess();
+  } catch (e) {
+    if (isBrowserRuntime()) globalThis.window.prompt(promptMessage, text);
+    throw e;
+  }
+}
+
+function downloadBlobAsFile(blob: Blob, fileName: string) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 100);
+}
+
+function fileNameFromCard(prefixKey: string) {
+  const namePart = [urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "card";
+  return `${t(prefixKey)}-${namePart}.png`;
+}
+
 /** Partage natif du lien de la carte (Web Share API si dispo, sinon copie du lien). */
 async function shareCardLink() {
   const title = shareTitle.value;
@@ -184,21 +232,13 @@ async function downloadCardImage() {
       pixelRatio: 2,
       skipFonts: true,
     });
-    const namePart = [urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "card";
-    const fileName = `${t("download.cardFilename")}-${namePart}.png`;
-    const link = document.createElement("a");
+    const fileName = fileNameFromCard("download.cardFilename");
     try {
       const res = await fetch(dataUrl);
       const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      link.href = blobUrl;
-      link.download = fileName;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      downloadBlobAsFile(blob, fileName);
     } catch {
+      const link = document.createElement("a");
       link.href = dataUrl;
       link.download = fileName;
       link.click();
@@ -228,8 +268,7 @@ async function shareCardImage() {
       pixelRatio: 2,
       skipFonts: true,
     });
-    const namePart = [urlCard.fName, urlCard.lName].filter(Boolean).join("-") || "card";
-    const fileName = `${t("download.cardFilename")}-${namePart}.png`;
+    const fileName = fileNameFromCard("download.cardFilename");
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     const file = new File([blob], fileName, { type: "image/png" });
@@ -240,14 +279,7 @@ async function shareCardImage() {
         files: [file],
       });
     } else {
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = fileName;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(link.href), 100);
+      downloadBlobAsFile(blob, fileName);
     }
   } catch (e) {
     if ((e as Error)?.name !== "AbortError") console.error("Share card image:", e);
@@ -261,22 +293,8 @@ async function copyLink() {
     publicUrl.value ||
     (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined" ? globalThis.window.location.href : url.value);
   try {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(linkToCopy);
-    } else {
-      const textarea = document.createElement("textarea");
-      textarea.value = linkToCopy;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      textarea.remove();
-    }
-    copySuccess.value = true;
-    setTimeout(() => { copySuccess.value = false; }, 2500);
+    await copyTextWithFallback(linkToCopy, "Copiez ce lien :");
   } catch (e) {
-    if (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined") globalThis.window.prompt("Copiez ce lien :", linkToCopy);
     console.error("Copier le lien:", e);
   }
 }
@@ -295,14 +313,7 @@ async function shareQRCode() {
         files: [file],
       });
     } else {
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(file);
-      link.download = file.name;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(link.href), 100);
+      downloadBlobAsFile(file, file.name);
     }
   } catch (e) {
     if ((e as Error)?.name !== "AbortError") console.error("Share QR code:", e);
@@ -313,22 +324,8 @@ async function copyEmployeeLink() {
   const linkToCopy = employeeLink.value;
   if (!linkToCopy) return;
   try {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(linkToCopy);
-    } else {
-      const textarea = document.createElement("textarea");
-      textarea.value = linkToCopy;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      textarea.remove();
-    }
-    copySuccess.value = true;
-    setTimeout(() => { copySuccess.value = false; }, 2500);
+    await copyTextWithFallback(linkToCopy, "Copiez le lien employé :");
   } catch (e) {
-    if (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined") globalThis.window.prompt("Copiez le lien employé :", linkToCopy);
     console.error("Copier lien employé:", e);
   }
 }
@@ -341,6 +338,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   globalThis.window?.removeEventListener("resize", updateScale);
+});
+
+defineExpose({
+  downloadCardImage,
+  shareCardImage,
+  shareQRCode,
 });
 </script>
 
