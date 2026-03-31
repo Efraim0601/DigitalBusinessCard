@@ -34,7 +34,7 @@ export const cardDepartmentEn: Record<string, string> = {
 };
 
 function normalizeKey(s: string): string {
-  return s.trim().replace(/\s+/g, " ");
+  return s.trim().replaceAll(/\s+/g, " ");
 }
 
 export function translateCardTitle(value: string | null | undefined, locale: string): string {

@@ -7,8 +7,7 @@ import {
 
 export function useAppLocale() {
   const locale = useState<Locale>("app-locale", () => "fr");
-  const canUseStorage = () =>
-    typeof globalThis !== "undefined" && typeof globalThis.localStorage !== "undefined";
+  const canUseStorage = () => globalThis.localStorage !== undefined;
 
   function setLocale(value: Locale) {
     locale.value = value;
@@ -25,13 +24,11 @@ export function useAppLocale() {
     return translateWithFallback(locale.value, key, params);
   }
 
-  if (typeof globalThis !== "undefined") {
-    try {
-      const stored = normalizeStoredLocale(globalThis.localStorage?.getItem(LOCALE_STORAGE_KEY));
-      if (stored) locale.value = stored;
-    } catch {
-      /* lecture stockage impossible */
-    }
+  try {
+    const stored = normalizeStoredLocale(globalThis.localStorage?.getItem(LOCALE_STORAGE_KEY));
+    if (stored) locale.value = stored;
+  } catch {
+    /* lecture stockage impossible */
   }
 
   return { locale, setLocale, t };

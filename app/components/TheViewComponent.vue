@@ -12,9 +12,10 @@ const copySuccess = ref(false);
 const CARD_WIDTH = 600;
 const CARD_HEIGHT = 340;
 const cardScale = ref(1);
+const hasWindow = () => globalThis.window !== undefined;
 const updateScale = () => {
   const availableWidth =
-    typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined"
+    hasWindow()
       ? Math.max(280, globalThis.window.innerWidth - 24)
       : CARD_WIDTH;
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
@@ -40,7 +41,7 @@ const FIXED_FAX = "222 221 785";
 
 /** URL sans owner ni employee : pour partage et QR, le visiteur/employé qui reçoit le lien a la vue adaptée. */
 const publicUrl = computed(() => {
-  if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
+  if (!hasWindow()) return "";
   return buildPublicCardUrl(
     globalThis.window.location.origin,
     route.path,
@@ -90,14 +91,14 @@ const shareTitle = computed(() => {
   return name ? t("share.cardTitle", { name }) : t("share.cardTitleDefault");
 });
 const shareUrl = computed(() => {
-  if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
+  if (!hasWindow()) return "";
   // Lien partagé = page de login, pas la carte directe
   return `${globalThis.window.location.origin}/`;
 });
 
 /** URL courte pour partage : ici on partage également la page de login. */
 function buildShortShareUrl(): string {
-  if (typeof globalThis === "undefined" || typeof globalThis.window === "undefined") return "";
+  if (!hasWindow()) return "";
   return `${globalThis.window.location.origin}/`;
 }
 const shareUrlShort = computed(() => buildShortShareUrl());
@@ -110,7 +111,7 @@ const shareText = computed(() => {
 const sharePopoverOpen = ref(false);
 
 function isBrowserRuntime() {
-  return typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined";
+  return hasWindow();
 }
 
 function markCopySuccess() {
@@ -122,8 +123,8 @@ function markCopySuccess() {
 
 async function copyTextWithFallback(text: string, promptMessage: string) {
   try {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
+    if (globalThis.navigator?.clipboard?.writeText) {
+      await globalThis.navigator.clipboard.writeText(text);
     } else {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -164,9 +165,9 @@ async function shareCardLink() {
   // On laisse le lien uniquement dans le champ url pour éviter les doublons dans certaines apps.
   const text = shareText.value;
 
-  if (typeof navigator !== "undefined" && navigator.share) {
+  if (globalThis.navigator?.share) {
     try {
-      await navigator.share({
+      await globalThis.navigator.share({
         title,
         text,
         url: pageUrl,
@@ -272,8 +273,8 @@ async function shareCardImage() {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     const file = new File([blob], fileName, { type: "image/png" });
-    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
+    if (globalThis.navigator?.share && globalThis.navigator.canShare?.({ files: [file] })) {
+      await globalThis.navigator.share({
         title: shareTitle.value,
         text: shareText.value,
         files: [file],
@@ -291,7 +292,7 @@ async function shareCardImage() {
 async function copyLink() {
   const linkToCopy =
     publicUrl.value ||
-    (typeof globalThis !== "undefined" && typeof globalThis.window !== "undefined" ? globalThis.window.location.href : url.value);
+    (hasWindow() ? globalThis.window.location.href : url.value);
   try {
     await copyTextWithFallback(linkToCopy, "Copiez ce lien :");
   } catch (e) {
@@ -306,8 +307,8 @@ async function shareQRCode() {
   const file = await getQR();
   if (!file) return;
   try {
-    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
+    if (globalThis.navigator?.share && globalThis.navigator.canShare?.({ files: [file] })) {
+      await globalThis.navigator.share({
         title: shareTitle.value,
         text: shareText.value,
         files: [file],

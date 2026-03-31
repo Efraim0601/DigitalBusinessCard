@@ -1,14 +1,17 @@
 /** Parse minimal `--key value` / `--flag` depuis process.argv. */
 export function parseArgs(argv) {
   const args = {};
-  for (let i = 2; i < argv.length; i++) {
-    const a = argv[i];
+  const queue = argv.slice(2);
+
+  while (queue.length > 0) {
+    const a = queue.shift();
+    if (!a) continue;
     if (a.startsWith("--")) {
       const key = a.slice(2);
-      const next = argv[i + 1];
+      const next = queue[0];
       if (next && !next.startsWith("--")) {
         args[key] = next;
-        i++;
+        queue.shift();
       } else {
         args[key] = true;
       }

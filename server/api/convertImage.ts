@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { Buffer } = await import("buffer");
+  const { Buffer } = await import("node:buffer");
 
   const query = getQuery(event);
   const imageUrl = query.url as string;

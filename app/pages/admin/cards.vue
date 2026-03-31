@@ -22,7 +22,7 @@ const jobTitleSaveError = ref<string | null>(null);
 const authError = ref<string | null>(null);
 
 function formatGroupedNumber(value: string | null | undefined): string {
-  const digits = (value ?? "").replace(/\D+/g, "");
+  const digits = (value ?? "").replaceAll(/\D+/g, "");
   if (!digits) return "";
   return digits.match(/.{1,3}/g)?.join(" ") ?? digits;
 }
@@ -56,6 +56,7 @@ async function loadCards() {
     });
     cards.value = res?.items ? res : { items: [], total: 0, limit: pageSize, offset: 0 };
   } catch (e) {
+    console.error("Load cards failed:", e);
     error.value = t("admin.loadError");
   } finally {
     loading.value = false;
@@ -324,9 +325,9 @@ const debouncedReloadJobTitles = debounce(() => {
   loadJobTitles();
 }, 300);
 
-watch(searchCards, () => typeof globalThis.window !== "undefined" && debouncedReloadCards());
-watch(searchDepartments, () => typeof globalThis.window !== "undefined" && debouncedReloadDepartments());
-watch(searchJobTitles, () => typeof globalThis.window !== "undefined" && debouncedReloadJobTitles());
+watch(searchCards, () => globalThis.window !== undefined && debouncedReloadCards());
+watch(searchDepartments, () => globalThis.window !== undefined && debouncedReloadDepartments());
+watch(searchJobTitles, () => globalThis.window !== undefined && debouncedReloadJobTitles());
 
 watch(pageCards, () => loadCards());
 watch(pageDepartments, () => loadDepartments());
