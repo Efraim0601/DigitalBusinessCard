@@ -4,7 +4,8 @@ export function renderMarkdownReport(meta, results) {
   let logoLine = "";
   try {
     if (meta.baseUrl) {
-      const logoUrl = new URL("/favicon.svg", meta.baseUrl).href;
+      const logoPath = "/logo.png";
+      const logoUrl = new URL(logoPath, meta.baseUrl).href;
       logoLine = `[![Afriland First Bank](${logoUrl})](https://www.afrilandfirstbank.com/)\n\n`;
     }
   } catch {

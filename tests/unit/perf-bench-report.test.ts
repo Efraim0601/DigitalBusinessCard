@@ -35,7 +35,7 @@ describe("perf-bench-report", () => {
     const md = renderMarkdownReport(meta, [row]);
     expect(md).toContain("vcard Performance Report");
     expect(md).toContain("Afriland First Bank");
-    expect(md).toContain("favicon.svg");
+    expect(md).toContain("logo.png");
     expect(md).toContain("S1");
   });
 
