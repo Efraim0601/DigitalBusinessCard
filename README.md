@@ -1,9 +1,17 @@
-# DigitalCard - Simple PWA for Digital Business Card Creation
+# Cardyo - Simple PWA for Digital Business Card Creation
+
+![Cardyo Screenshot](screenshot.png)
 
 Cardyo is a lightweight Progressive Web App (PWA) that allows users to create and share digital business cards. All the card's data is embedded in the URL query parameters, making it easily shareable via a QR code or direct link.  
 
 ## 🚀 Features  
 
+- 🖼️ **Customizable Cards**: Input Name, Company, Title, Avatar Image, Email, and Phone Number  
+- 🔗 **URL-Based Storage**: No database required, all data lives in the URL query parameters  
+- 📱 **PWA Support**: Installable on mobile and desktop  
+- 📷 **QR Code Generation**: Instantly generate and download a QR code for easy sharing  
+- 🖥️ **Lightweight & Fast**: Built with Nuxt.js for seamless performance
+- 📋 **Downloadable Contact Card** (.vcf) format
 
 ## Installation
 
