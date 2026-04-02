@@ -8,6 +8,10 @@ const hoisted = vi.hoisted(() => {
     release: mockRelease,
   });
   class MockPool {
+    constructor(..._args: unknown[]) {}
+    on(_event: string, _cb: () => void) {
+      return this;
+    }
     connect() {
       return mockConnect();
     }

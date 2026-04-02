@@ -107,4 +107,14 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: "2024-11-27",
+
+  /** Timeout HTTP requête (rapport DSIT DA-03) — 503 côté Node si dépassé. */
+  nitro: {
+    hooks: {
+      listen(server) {
+        const ms = Math.max(1000, Number(process.env.NITRO_REQUEST_TIMEOUT_MS || 2000));
+        server.requestTimeout = ms;
+      },
+    },
+  },
 });

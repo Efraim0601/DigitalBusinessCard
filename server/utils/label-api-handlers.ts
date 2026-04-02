@@ -15,11 +15,25 @@ import {
   updateLabelById,
   type LabelTable,
 } from "./label-entities";
+import {
+  getLabelListCached,
+  invalidateLabelListCache,
+  setLabelListCached,
+} from "./label-list-cache";
 
 export function labelsListHandler(table: LabelTable) {
   return defineEventHandler(async (event) => {
     requireAdmin(event);
-    return listLabelsPaged(table, readPagedListQuery(event));
+    const p = readPagedListQuery(event);
+    if (!p.searchLike) {
+      const hit = getLabelListCached(table, p.limit, p.offset);
+      if (hit) return hit;
+    }
+    const data = await listLabelsPaged(table, p);
+    if (!p.searchLike) {
+      setLabelListCached(table, p.limit, p.offset, data);
+    }
+    return data;
   });
 }
 
@@ -32,7 +46,9 @@ export function labelsPostHandler(table: LabelTable) {
       return { error: "label_fr and label_en are required" };
     }
     try {
-      return await insertLabelPair(table, body.label_fr.trim(), body.label_en.trim());
+      const row = await insertLabelPair(table, body.label_fr.trim(), body.label_en.trim());
+      invalidateLabelListCache(table);
+      return row;
     } catch (e: unknown) {
       if (isPgMissingRelation(e)) {
         setResponseStatus(event, 503);
@@ -57,6 +73,7 @@ export function labelsPutHandler(table: LabelTable, notFoundMessage: string) {
       setResponseStatus(event, result.status);
       return { error: result.error };
     }
+    invalidateLabelListCache(table);
     return result.row;
   });
 }
@@ -74,6 +91,7 @@ export function labelsDeleteHandler(table: LabelTable, notFoundMessage: string) 
       setResponseStatus(event, result.status);
       return { error: result.error };
     }
+    invalidateLabelListCache(table);
     return { success: true };
   });
 }

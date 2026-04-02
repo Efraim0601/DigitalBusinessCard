@@ -1,21 +1,28 @@
 import { issueAdminSession, validateAdminCredentials } from "../../../utils/admin-auth";
+import { createConcurrentLimiter } from "../../../utils/concurrent-limit";
 
-export default defineEventHandler(async (event) => {
-  const body = await readBody<{ email?: string; password?: string }>(event);
-  const email = body?.email?.trim() || "";
-  const password = body?.password || "";
+const loginLimiter = createConcurrentLimiter(
+  Math.max(1, Number(process.env.ADMIN_LOGIN_MAX_CONCURRENT || 20))
+);
 
-  if (!email || !password) {
-    setResponseStatus(event, 400);
-    return { error: "email and password are required" };
-  }
+export default defineEventHandler(async (event) =>
+  loginLimiter.run(async () => {
+    const body = await readBody<{ email?: string; password?: string }>(event);
+    const email = body?.email?.trim() || "";
+    const password = body?.password || "";
 
-  if (!validateAdminCredentials(event, email, password)) {
-    setResponseStatus(event, 401);
-    return { error: "Invalid credentials" };
-  }
+    if (!email || !password) {
+      setResponseStatus(event, 400);
+      return { error: "email and password are required" };
+    }
 
-  issueAdminSession(event, email);
-  return { success: true };
-});
+    if (!validateAdminCredentials(event, email, password)) {
+      setResponseStatus(event, 401);
+      return { error: "Invalid credentials" };
+    }
+
+    issueAdminSession(event, email);
+    return { success: true };
+  })
+);
 

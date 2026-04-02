@@ -1,7 +1,16 @@
 import { fmtMs } from "./perf-bench-stats.mjs";
 
 export function renderMarkdownReport(meta, results) {
-  const header = `# vcard Performance Report
+  let logoLine = "";
+  try {
+    if (meta.baseUrl) {
+      const logoUrl = new URL("/favicon.svg", meta.baseUrl).href;
+      logoLine = `[![Afriland First Bank](${logoUrl})](https://www.afrilandfirstbank.com/)\n\n`;
+    }
+  } catch {
+    /* baseUrl invalide : pas de logo */
+  }
+  const header = `${logoLine}# vcard Performance Report
 
 Generated: ${meta.generatedAt}
 Node: ${meta.node}
