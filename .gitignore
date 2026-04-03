@@ -30,3 +30,6 @@ perf-reports-test/
 !.env.example
 /.vscode
 /public/content
+
+# Notice fournisseur favicon (non applicative)
+public/README.txt
