@@ -355,6 +355,7 @@ curl -I http://localhost:8765/
 curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:8765/api/cards?limit=1&offset=0"
 curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:8765/api/departments"
 curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:8765/api/job-titles"
+curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:8765/api/openapi"
 ```
 
 Codes attendus:
@@ -363,6 +364,12 @@ Codes attendus:
 - `/api/cards?limit=1&offset=0` -> `200`
 - `/api/departments` -> `200`
 - `/api/job-titles` -> `200`
+- `/api/openapi` -> `200` (specification OpenAPI 3.0 JSON, DOC-002)
+
+### 9.1.1 Documentation technique API (OpenAPI)
+
+- **URL** : `GET /api/openapi` (sans authentification ; `Cache-Control: public, max-age=3600`).
+- **Variables** : `NITRO_HANDLER_TIMEOUT_MS` (defaut 2000) — delai avant reponse **503** si un handler API ne termine pas ; `NITRO_REQUEST_TIMEOUT_MS` — timeout socket HTTP Node (defaut = handler + 1500 ms).
 
 ### 9.2 Points de verification
 

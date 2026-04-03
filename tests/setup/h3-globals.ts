@@ -7,6 +7,7 @@ import {
   getRouterParam,
   readBody,
   setCookie,
+  setResponseHeader,
   setResponseStatus,
 } from "h3";
 
@@ -19,5 +20,6 @@ Object.assign(globalThis, {
   getRouterParam,
   readBody,
   setCookie,
+  setResponseHeader,
   setResponseStatus,
 });

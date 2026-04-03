@@ -6,7 +6,8 @@
  *   node scripts/perf-bench.mjs --base http://localhost:8766 --email demo@afrilandfirstbank.com --runs 2
  *
  * Charge / prod (recommandations rapport DSIT) : côté serveur, voir PG_POOL_MAX, PG_STATEMENT_TIMEOUT_MS,
- * NITRO_REQUEST_TIMEOUT_MS, ADMIN_LOGIN_MAX_CONCURRENT, LABEL_LIST_CACHE_TTL_MS. Côté k6 : réutiliser le cookie
+ * NITRO_HANDLER_TIMEOUT_MS (503 applicatif), NITRO_REQUEST_TIMEOUT_MS (socket), ADMIN_LOGIN_MAX_CONCURRENT,
+ * LABEL_LIST_CACHE_TTL_MS. Doc API : GET /api/openapi. Côté k6 : réutiliser le cookie
  * de session après un seul login par VU (éviter un POST /login par itération).
  *
  * Outputs:

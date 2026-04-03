@@ -28,6 +28,7 @@ export default defineNuxtConfig({
     "/api/cards": { cors: true },
     "/api/departments": { cors: true },
     "/api/job-titles": { cors: true },
+    "/api/openapi": { cors: true },
   },
 
   experimental: {
@@ -116,12 +117,16 @@ export default defineNuxtConfig({
 
   compatibilityDate: "2024-11-27",
 
-  /** Timeout HTTP requête (rapport DSIT DA-03) — 503 côté Node si dépassé. */
+  /**
+   * Timeout socket HTTP : au-dessus du middleware API (NITRO_HANDLER_TIMEOUT_MS, défaut 2000)
+   * pour laisser le temps d’émettre le 503 applicatif avant fermeture Node.
+   */
   nitro: {
     hooks: {
       listen(server) {
-        const ms = Math.max(1000, Number(process.env.NITRO_REQUEST_TIMEOUT_MS || 2000));
-        server.requestTimeout = ms;
+        const handlerMs = Math.max(500, Number(process.env.NITRO_HANDLER_TIMEOUT_MS || 2000));
+        const explicit = Number(process.env.NITRO_REQUEST_TIMEOUT_MS || 0);
+        server.requestTimeout = explicit > 0 ? explicit : handlerMs + 1500;
       },
     },
   },
