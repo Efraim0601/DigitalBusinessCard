@@ -10,7 +10,10 @@ const error = ref<string | null>(null);
 async function go() {
   error.value = null;
   const trimmedEmail = email.value.trim();
-  if (!trimmedEmail) return;
+  if (!trimmedEmail) {
+    error.value = t("card.emailRequired");
+    return;
+  }
   const trimmedPassword = password.value.trim();
 
   if (trimmedPassword) {

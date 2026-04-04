@@ -48,7 +48,29 @@ describe("app/pages/card.vue", () => {
     await flushPromises();
     await flushPromises();
     expect(wrapper.html()).toContain("card.emailRequired");
+    expect(wrapper.find("[data-testid=\"card-email-required\"]").exists()).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("traite email dupliqué en query (tableau) comme le premier", async () => {
+    routeQuery = { email: ["first@x.com", "second@x.com"] };
+    fetchMock.mockResolvedValue({
+      email: "first@x.com",
+      first_name: "A",
+      last_name: "B",
+      company: null,
+      title: null,
+      phone: null,
+      fax: null,
+      mobile: null,
+      department: null,
+      job_title: null,
+    });
+    const wrapper = mountInSuspense();
+    await flushPromises();
+    await flushPromises();
+    expect(fetchMock).toHaveBeenCalledWith("/api/cards", { query: { email: "first@x.com" } });
+    expect(wrapper.html()).toContain("data-test=\"view\"");
   });
 
   it("maps fetched card and renders view component", async () => {

@@ -22,6 +22,20 @@ describe("app/pages/index.vue", () => {
     });
   });
 
+  it("affiche Email requis si email vide et ne navigue pas", async () => {
+    const wrapper = shallowMount(IndexPage, {
+      global: { stubs: ["NuxtPwaManifest", "UFormField", "UInput", "UButton", "UIcon"] },
+    });
+    const vm = wrapper.vm as unknown as IndexVm;
+    vm.email = "   ";
+    vm.password = "";
+
+    await vm.go();
+
+    expect(vm.error).toBe("card.emailRequired");
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("navigates to card page when password is empty", async () => {
     const wrapper = shallowMount(IndexPage, {
       global: { stubs: ["NuxtPwaManifest", "UFormField", "UInput", "UButton", "UIcon"] },

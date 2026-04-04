@@ -2,7 +2,15 @@
 import type { Card } from "~~/types/card";
 
 const route = useRoute();
-const email = computed(() => (route.query.email as string)?.trim() || "");
+
+/** Paramètre `email` unique (évite ?email=foo&email=bar) ; chaîne vide = absent. */
+function normalizedEmailQuery(raw: unknown): string {
+  if (raw == null) return "";
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  return typeof first === "string" ? first.trim() : "";
+}
+
+const email = computed(() => normalizedEmailQuery(route.query.email));
 const { t } = useAppLocale();
 const appConfig = useAppConfig();
 
@@ -62,7 +70,12 @@ const TheViewComponent = defineAsyncComponent(() => import("~/components/TheView
   <div class="flex flex-col items-center justify-center gap-4 min-h-screen py-6 px-3 sm:px-4">
     <NuxtPwaManifest />
     <div class="flex flex-col items-center gap-2 w-full max-w-2xl mt-24 sm:mt-60 pb-10">
-      <p v-if="!email" class="text-sm text-zinc-500">
+      <p
+        v-if="!email"
+        class="text-sm text-zinc-600 dark:text-zinc-400"
+        role="alert"
+        data-testid="card-email-required"
+      >
         {{ t('card.emailRequired') }}
       </p>
       <p v-else-if="loading" class="text-sm text-zinc-500">
