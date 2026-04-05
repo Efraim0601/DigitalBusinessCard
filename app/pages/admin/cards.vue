@@ -735,58 +735,88 @@ watch(activeTab, (tab) => {
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
-          <h2 class="text-lg font-semibold mb-1">
-            {{ editing?.id ? t("admin.editCard") : t("admin.createCardForm") }}
-          </h2>
-          <p class="text-xs text-zinc-500 mb-2">
-            {{ t("admin.helpText") }}
-          </p>
+        <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 sm:p-6 shadow-sm">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              {{ editing?.id ? t("admin.editCard") : t("admin.createCardForm") }}
+            </h2>
+            <p class="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl">
+              {{ t("admin.helpText") }}
+            </p>
+          </div>
 
-          <div v-if="editing" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <UFormField :label="t('admin.email')" required class="sm:col-span-2">
-              <UInput v-model="editing.email" type="email" />
-            </UFormField>
-            <UFormField :label="t('admin.firstName')">
-              <UInput v-model="editing.first_name" />
-            </UFormField>
-            <UFormField :label="t('admin.lastName')">
-              <UInput v-model="editing.last_name" />
-            </UFormField>
-
-            <UFormField :label="t('admin.department')" class="sm:col-span-2">
-              <select
-                v-model="departmentSelectValue"
-                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+          <div v-if="editing" class="space-y-8">
+            <section class="space-y-4">
+              <h3
+                class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-700 pb-2"
               >
-                <option v-for="opt in departmentOptions" :key="String(opt.value)" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </UFormField>
+                {{ t("admin.formSectionIdentity") }}
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <UFormField :label="t('admin.email')" required class="md:col-span-2">
+                  <UInput v-model="editing.email" type="email" class="w-full" />
+                </UFormField>
+                <UFormField :label="t('admin.firstName')" class="min-w-0">
+                  <UInput v-model="editing.first_name" class="w-full" />
+                </UFormField>
+                <UFormField :label="t('admin.lastName')" class="min-w-0">
+                  <UInput v-model="editing.last_name" class="w-full" />
+                </UFormField>
+              </div>
+            </section>
 
-            <UFormField :label="t('admin.titleField')" class="sm:col-span-2">
-              <select
-                v-model="jobTitleSelectValue"
-                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+            <section class="space-y-4">
+              <h3
+                class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-700 pb-2"
               >
-                <option v-for="opt in jobTitleOptions" :key="String(opt.value)" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </UFormField>
+                {{ t("admin.formSectionOrganization") }}
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <UFormField :label="t('admin.department')" class="min-w-0">
+                  <select
+                    v-model="departmentSelectValue"
+                    class="w-full min-w-0 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+                  >
+                    <option v-for="opt in departmentOptions" :key="String(opt.value)" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </UFormField>
+                <UFormField :label="t('admin.titleField')" class="min-w-0">
+                  <select
+                    v-model="jobTitleSelectValue"
+                    class="w-full min-w-0 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+                  >
+                    <option v-for="opt in jobTitleOptions" :key="String(opt.value)" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </UFormField>
+              </div>
+            </section>
 
-            <UFormField :label="t('admin.phone')">
-              <UInput :model-value="FIXED_PHONE" readonly />
-            </UFormField>
-            <UFormField :label="t('admin.fax')">
-              <UInput :model-value="FIXED_FAX" readonly />
-            </UFormField>
-            <UFormField :label="t('admin.mobile')">
-              <UInput v-model="editing.mobile" inputmode="numeric" />
-            </UFormField>
+            <section class="space-y-4">
+              <h3
+                class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-700 pb-2"
+              >
+                {{ t("admin.formSectionContact") }}
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <UFormField :label="t('admin.phone')" class="min-w-0">
+                  <UInput :model-value="FIXED_PHONE" readonly class="w-full" />
+                </UFormField>
+                <UFormField :label="t('admin.fax')" class="min-w-0">
+                  <UInput :model-value="FIXED_FAX" readonly class="w-full" />
+                </UFormField>
+                <UFormField :label="t('admin.mobile')" class="min-w-0 sm:col-span-2 lg:col-span-1">
+                  <UInput v-model="editing.mobile" inputmode="numeric" class="w-full" />
+                </UFormField>
+              </div>
+            </section>
 
-            <div class="flex flex-wrap gap-2 pt-2 sm:col-span-2 lg:col-span-3">
+            <div
+              class="flex flex-wrap items-center gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-700"
+            >
               <UButton color="primary" @click="saveCard">
                 {{ t("admin.save") }}
               </UButton>
