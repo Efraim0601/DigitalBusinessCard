@@ -329,31 +329,6 @@ async function bulkDeleteSelectedJobTitles() {
   }
 }
 
-async function exportAdminDataXlsx() {
-  dataTransferError.value = null;
-  dataTransferMessage.value = null;
-  try {
-    const buf = await $fetch<ArrayBuffer>("/api/admin/data-export", {
-      query: { format: "xlsx" },
-      responseType: "arrayBuffer",
-    });
-    if (!import.meta.client) return;
-    const blob = new Blob([buf], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `vcard-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
-    dataTransferMessage.value = t("admin.exportExcelSuccess");
-  } catch (e) {
-    dataTransferError.value = t("admin.exportError");
-    console.error(e);
-  }
-}
-
 async function exportAdminDataCsvZip() {
   dataTransferError.value = null;
   dataTransferMessage.value = null;
@@ -652,9 +627,6 @@ watch(activeTab, (tab) => {
         {{ t("admin.dataTransferHint") }}
       </p>
       <div class="flex flex-wrap items-center gap-2">
-        <UButton type="button" variant="outline" size="sm" icon="i-lucide-download" @click="exportAdminDataXlsx">
-          {{ t("admin.exportExcel") }}
-        </UButton>
         <UButton type="button" variant="outline" size="sm" icon="i-lucide-archive" @click="exportAdminDataCsvZip">
           {{ t("admin.exportCsvZip") }}
         </UButton>
