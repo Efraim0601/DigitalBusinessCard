@@ -50,6 +50,14 @@ export default defineNuxtConfig({
     },
   },
 
+  /** Thème clair par défaut (sans imposer le mode système). La préférence reste mémorisée si l’utilisateur bascule. */
+  colorMode: {
+    preference: "light",
+    fallback: "light",
+    classSuffix: "",
+    disableTransition: true,
+  },
+
   modules: [
     "@nuxt/ui",
     "@nuxt/eslint",
