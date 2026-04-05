@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { type PoolClient, Pool } from "pg";
 
 const {
   DATABASE_URL,
@@ -38,6 +38,21 @@ export async function query<T = unknown>(text: string, params?: unknown[]): Prom
   try {
     const res = await client.query<T>(text, params);
     return { rows: res.rows };
+  } finally {
+    client.release();
+  }
+}
+
+export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
   } finally {
     client.release();
   }

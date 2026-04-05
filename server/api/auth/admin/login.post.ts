@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) =>
       return { error: "email and password are required" };
     }
 
-    if (!validateAdminCredentials(event, email, password)) {
+    if (!(await validateAdminCredentials(event, email, password))) {
       setResponseStatus(event, 401);
       return { error: "Invalid credentials" };
     }

@@ -1,5 +1,6 @@
-version: "3.9"
-
+# Build qui échoue avec "apparmor ... /proc/thread-self/attr/apparmor/exec" :
+#   ./scripts/docker-up-build.sh
+# (BuildKit désactivé + voir commentaires dans ce script pour Docker Snap / apparmor.)
 services:
   db:
     image: postgres:16

@@ -42,3 +42,7 @@ export function invalidateLabelListCache(table: LabelTable) {
     if (k.startsWith(prefix)) store.delete(k);
   }
 }
+
+export function invalidateAllLabelListCaches() {
+  store.clear();
+}

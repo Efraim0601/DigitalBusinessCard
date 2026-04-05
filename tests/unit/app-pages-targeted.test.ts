@@ -22,6 +22,7 @@ describe("app/pages/index.vue", () => {
     vi.stubGlobal("useRouter", () => ({ push }));
     vi.stubGlobal("$fetch", fetchMock);
     vi.stubGlobal("useAppLocale", () => ({ t: (k: string) => k }));
+    fetchMock.mockResolvedValue({ isAdminEmail: false, hasCard: true });
     const mod = await import("../../app/pages/index.vue");
     const w = mount(mod.default, {
       global: {
@@ -37,8 +38,9 @@ describe("app/pages/index.vue", () => {
     const inputs = w.findAll("input");
     await inputs[0]?.setValue(" user@bank.com ");
     await w.find("form").trigger("submit");
+    await flushPromises();
     expect(push).toHaveBeenCalledWith({ path: "/card", query: { email: "user@bank.com" } });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
   });
 });
 

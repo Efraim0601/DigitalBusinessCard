@@ -6,6 +6,8 @@ const email = ref("");
 const password = ref("");
 const loading = ref(false);
 const error = ref<string | null>(null);
+/** Affiché uniquement après détection email admin (indice serveur). */
+const showAdminPassword = ref(false);
 
 async function go() {
   error.value = null;
@@ -14,30 +16,41 @@ async function go() {
     error.value = t("card.emailRequired");
     return;
   }
-  const trimmedPassword = password.value.trim();
 
-  if (trimmedPassword) {
-    loading.value = true;
-    try {
+  loading.value = true;
+  try {
+    const hint = await $fetch<{ isAdminEmail: boolean; hasCard: boolean }>("/api/auth/login-hint", {
+      query: { email: trimmedEmail },
+    });
+
+    if (hint.isAdminEmail) {
+      const trimmedPassword = password.value.trim();
+      if (!trimmedPassword) {
+        showAdminPassword.value = true;
+        error.value = t("login.adminPasswordRequired");
+        return;
+      }
       await $fetch("/api/auth/admin/login", {
         method: "POST",
         body: { email: trimmedEmail, password: trimmedPassword },
       });
       password.value = "";
+      showAdminPassword.value = false;
       await router.push("/admin/cards");
       return;
-    } catch (e: any) {
-      error.value = e?.data?.error || t("login.authFailed");
-      return;
-    } finally {
-      loading.value = false;
     }
-  }
 
-  await router.push({
-    path: "/card",
-    query: { email: trimmedEmail },
-  });
+    showAdminPassword.value = false;
+    password.value = "";
+    await router.push({
+      path: "/card",
+      query: { email: trimmedEmail },
+    });
+  } catch (e: any) {
+    error.value = e?.data?.error || t("login.authFailed");
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
@@ -71,7 +84,7 @@ async function go() {
               {{ t('login.welcomeBack') }}
             </h2>
             <p class="text-[11px] text-slate-500 mt-1">
-              {{ t('login.hint') }}
+              {{ showAdminPassword ? t('login.hintAdminStep') : t('login.hint') }}
             </p>
           </div>
         </div>
@@ -89,18 +102,20 @@ async function go() {
               :placeholder="t('login.emailPlaceholder')"
             />
           </UFormField>
-          <UFormField :label="t('login.adminSecretLabel')" name="password" class="w-full">
-            <UInput
-              v-model="password"
-              type="password"
-              class="w-full"
-              autocomplete="current-password"
-              :placeholder="t('login.adminSecretPlaceholder')"
-            />
-          </UFormField>
-          <p class="text-[11px] text-slate-500 -mt-1">
-            {{ t('login.adminSecretHint') }}
-          </p>
+          <template v-if="showAdminPassword">
+            <UFormField :label="t('login.adminSecretLabel')" name="password" class="w-full">
+              <UInput
+                v-model="password"
+                type="password"
+                class="w-full"
+                autocomplete="current-password"
+                :placeholder="t('login.adminSecretPlaceholder')"
+              />
+            </UFormField>
+            <p class="text-[11px] text-slate-500 -mt-1">
+              {{ t('login.adminSecretHint') }}
+            </p>
+          </template>
           <p v-if="error" class="text-xs text-red-500">
             {{ error }}
           </p>

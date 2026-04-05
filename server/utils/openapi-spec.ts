@@ -58,16 +58,63 @@ export function buildOpenApiDocument(baseUrl: string) {
           },
         },
       },
+      "/api/auth/login-hint": {
+        get: {
+          summary: "Indicateurs page d’accueil (email admin / carte existante)",
+          parameters: [{ name: "email", in: "query", required: true, schema: { type: "string", format: "email" } }],
+          responses: {
+            "200": { description: "{ isAdminEmail, hasCard }" },
+            "400": { description: "email manquant" },
+          },
+        },
+      },
+      "/api/auth/admin/credentials": {
+        get: {
+          summary: "Email admin effectif et source (session requise)",
+          security: [{ cookieAuth: [] }],
+          responses: { "200": { description: "OK" }, "401": { description: "Non authentifié" } },
+        },
+        put: {
+          summary: "Mettre à jour email / mot de passe admin (persisté en base)",
+          security: [{ cookieAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["currentPassword"],
+                  properties: {
+                    currentPassword: { type: "string" },
+                    newEmail: { type: "string", format: "email" },
+                    newPassword: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": { description: "OK, cookie session renouvelé" },
+            "400": { description: "Paramètres invalides" },
+            "401": { description: "Mot de passe actuel incorrect" },
+          },
+        },
+      },
       "/api/cards": {
         get: {
-          summary: "Liste paginée des cartes",
+          summary: "Carte par email (sans auth) ou liste paginée (admin)",
           security: [{ cookieAuth: [] }],
           parameters: [
+            { name: "email", in: "query", schema: { type: "string", format: "email" } },
             { name: "limit", in: "query", schema: { type: "integer", default: 20 } },
             { name: "offset", in: "query", schema: { type: "integer", default: 0 } },
             { name: "q", in: "query", schema: { type: "string" } },
           ],
-          responses: { "200": { description: "Page de cartes" }, "401": { description: "Admin requis" } },
+          responses: {
+            "200": { description: "Une carte ou page" },
+            "401": { description: "Admin requis (sans ?email)" },
+            "404": { description: "Carte introuvable (?email)" },
+          },
         },
         post: {
           summary: "Créer une carte",

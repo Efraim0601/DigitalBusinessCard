@@ -1,4 +1,6 @@
 import type { H3Event } from "h3";
+import { getAdminLoginRow } from "./admin-credentials-db";
+import { verifyAdminPasswordHash } from "./admin-password-hash";
 import {
   parseAdminSessionToken,
   serializeAdminSessionToken,
@@ -17,10 +19,32 @@ function getAdminAuthConfig(event: H3Event) {
   };
 }
 
-export function validateAdminCredentials(event: H3Event, email: string, password: string): boolean {
+/** Email effectif pour comparaison (ligne DB si présente, sinon env). */
+export async function getEffectiveAdminEmailNormalized(event: H3Event): Promise<string> {
+  const row = await getAdminLoginRow();
+  if (row?.email?.trim()) return row.email.trim().toLowerCase();
+  const auth = getAdminAuthConfig(event);
+  return auth.email.trim().toLowerCase();
+}
+
+export async function validateAdminCredentials(
+  event: H3Event,
+  email: string,
+  password: string
+): Promise<boolean> {
+  const row = await getAdminLoginRow();
+  if (row?.email && row.password_hash) {
+    if (row.email.trim().toLowerCase() !== email.trim().toLowerCase()) return false;
+    return verifyAdminPasswordHash(password, row.password_hash);
+  }
   const auth = getAdminAuthConfig(event);
   if (!auth.email || !auth.password) return false;
   return auth.email.toLowerCase() === email.trim().toLowerCase() && auth.password === password;
+}
+
+/** Email / mot de passe initiaux (env) pour vérification avant première persistance DB. */
+export function getConfiguredAdminCredentials(event: H3Event) {
+  return getAdminAuthConfig(event);
 }
 
 export function issueAdminSession(event: H3Event, email: string) {

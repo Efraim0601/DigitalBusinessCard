@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -26,7 +25,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appgroup \
   && adduser -S -u 1001 -G appgroup appuser
 
-COPY --from=build --chmod=0555 /app/.output ./.output
+COPY --from=build /app/.output ./.output
+RUN chown -R appuser:appgroup /app/.output
 
 USER appuser
 
