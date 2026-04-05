@@ -329,20 +329,48 @@ async function bulkDeleteSelectedJobTitles() {
   }
 }
 
-async function exportAdminData() {
+async function exportAdminDataXlsx() {
   dataTransferError.value = null;
   dataTransferMessage.value = null;
   try {
-    const data = await $fetch<Record<string, unknown>>("/api/admin/data-export");
+    const buf = await $fetch<ArrayBuffer>("/api/admin/data-export", {
+      query: { format: "xlsx" },
+      responseType: "arrayBuffer",
+    });
     if (!import.meta.client) return;
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `vcard-data-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `vcard-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
-    dataTransferMessage.value = t("admin.exportJson");
+    dataTransferMessage.value = t("admin.exportExcelSuccess");
+  } catch (e) {
+    dataTransferError.value = t("admin.exportError");
+    console.error(e);
+  }
+}
+
+async function exportAdminDataCsvZip() {
+  dataTransferError.value = null;
+  dataTransferMessage.value = null;
+  try {
+    const buf = await $fetch<ArrayBuffer>("/api/admin/data-export", {
+      query: { format: "csv" },
+      responseType: "arrayBuffer",
+    });
+    if (!import.meta.client) return;
+    const blob = new Blob([buf], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vcard-export-csv-${new Date().toISOString().slice(0, 10)}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    dataTransferMessage.value = t("admin.exportCsvZipSuccess");
   } catch (e) {
     dataTransferError.value = t("admin.exportError");
     console.error(e);
@@ -361,12 +389,12 @@ async function onImportFileChange(ev: Event) {
   dataTransferError.value = null;
   dataTransferMessage.value = null;
   try {
-    const text = await file.text();
-    const json = JSON.parse(text) as Record<string, unknown>;
+    const fd = new FormData();
+    fd.append("file", file);
     const res = await $fetch<{
       success: boolean;
       imported: { departments: number; job_titles: number; cards: number };
-    }>("/api/admin/data-import", { method: "POST", body: json });
+    }>("/api/admin/data-import", { method: "POST", body: fd });
     dataTransferMessage.value = t("admin.importSuccess", {
       departments: String(res.imported.departments),
       jobTitles: String(res.imported.job_titles),
@@ -615,7 +643,7 @@ watch(activeTab, (tab) => {
     <input
       ref="importFileInput"
       type="file"
-      accept="application/json,.json"
+      accept=".xlsx,.xls,.csv,.zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/zip"
       class="hidden"
       @change="onImportFileChange"
     >
@@ -624,11 +652,14 @@ watch(activeTab, (tab) => {
         {{ t("admin.dataTransferHint") }}
       </p>
       <div class="flex flex-wrap items-center gap-2">
-        <UButton type="button" variant="outline" size="sm" icon="i-lucide-download" @click="exportAdminData">
-          {{ t("admin.exportJson") }}
+        <UButton type="button" variant="outline" size="sm" icon="i-lucide-download" @click="exportAdminDataXlsx">
+          {{ t("admin.exportExcel") }}
+        </UButton>
+        <UButton type="button" variant="outline" size="sm" icon="i-lucide-archive" @click="exportAdminDataCsvZip">
+          {{ t("admin.exportCsvZip") }}
         </UButton>
         <UButton type="button" variant="outline" size="sm" icon="i-lucide-upload" @click="openImportPicker">
-          {{ t("admin.importJson") }}
+          {{ t("admin.importSpreadsheet") }}
         </UButton>
       </div>
       <p v-if="dataTransferMessage" class="text-xs text-green-600 dark:text-green-400">
