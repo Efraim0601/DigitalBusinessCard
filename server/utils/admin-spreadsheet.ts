@@ -1,6 +1,7 @@
 import { createError } from "h3";
 import JSZip from "jszip";
-import * as XLSX from "xlsx";
+/** Fichier unique : l’entrée `xlsx` tire `dist/cpexcel.js` en import séparé, ce qui casse Nitro/Docker (chemins absolus). */
+import * as XLSX from "xlsx/dist/xlsx.full.min.js";
 import {
   ADMIN_DATA_FORMAT_VERSION,
   type AdminDataBundle,

@@ -25,6 +25,7 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appgroup \
   && adduser -S -u 1001 -G appgroup appuser
 
+# Nitro embarque `node_modules` tracés (ex. xlsx, jszip, pg) sous `.output/server/`.
 COPY --from=build /app/.output ./.output
 RUN chown -R appuser:appgroup /app/.output
 
