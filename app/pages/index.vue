@@ -46,8 +46,9 @@ async function go() {
       path: "/card",
       query: { email: trimmedEmail },
     });
-  } catch (e: any) {
-    error.value = e?.data?.error || t("login.authFailed");
+  } catch (e: unknown) {
+    const payload = e as { data?: { error?: string } };
+    error.value = payload?.data?.error ?? t("login.authFailed");
   } finally {
     loading.value = false;
   }
@@ -55,83 +56,112 @@ async function go() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-slate-950 sm:bg-gradient-to-br sm:from-slate-950 sm:via-slate-900 sm:to-slate-950 px-3 sm:px-4 py-6">
+  <div
+    class="min-h-screen flex flex-col items-center justify-center bg-white px-4 py-10 sm:py-14 text-zinc-900"
+  >
     <NuxtPwaManifest />
-    <div class="w-full max-w-md">
-      <div class="rounded-3xl bg-white border border-slate-200 shadow-[0_18px_50px_rgba(15,23,42,0.35)] overflow-hidden">
-        <div class="px-6 pt-6 pb-4 flex flex-col items-center">
-          <div class="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
-            <UIcon name="i-lucide-building-2" class="w-9 h-9 text-red-600" />
-          </div>
-          <h1 class="text-xl sm:text-2xl font-semibold text-slate-900 text-center">
-            {{ t('login.title') }}
-          </h1>
-          <p class="text-xs sm:text-sm text-slate-500 mt-1 text-center tracking-wide uppercase">
-            {{ t('login.subtitle') }}
-          </p>
-
-          <div class="w-full mt-6 rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-rose-50 p-4">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-red-600 mb-1">
-              {{ t('login.employeePortal') }}
-            </p>
-            <p class="text-xs text-slate-600">
-              {{ t('login.employeePortalDesc') }}
-            </p>
-          </div>
-
-          <div class="w-full mt-6 text-left">
-            <h2 class="text-sm font-semibold text-slate-900">
-              {{ t('login.welcomeBack') }}
-            </h2>
-            <p class="text-[11px] text-slate-500 mt-1">
-              {{ showAdminPassword ? t('login.hintAdminStep') : t('login.hint') }}
-            </p>
-          </div>
-        </div>
-
-        <form
-          class="px-6 pb-6 flex flex-col gap-3"
-          @submit.prevent="go"
+    <div class="w-full max-w-[420px] flex flex-col items-stretch">
+      <header class="flex flex-col items-center text-center mb-6">
+        <div
+          class="w-14 h-14 rounded-xl bg-red-600 flex items-center justify-center shadow-sm mb-4"
+          aria-hidden="true"
         >
-          <UFormField :label="t('login.emailLabel')" name="email" class="w-full">
+          <UIcon name="i-lucide-building-2" class="w-8 h-8 text-white" />
+        </div>
+        <h1 class="text-2xl font-bold text-zinc-900 tracking-tight">
+          {{ t("login.title") }}
+        </h1>
+        <p
+          class="mt-2 text-[11px] sm:text-xs font-medium text-zinc-500 uppercase tracking-[0.18em] max-w-sm"
+        >
+          {{ t("login.subtitle") }}
+        </p>
+      </header>
+
+      <div
+        class="mb-6 rounded-xl border border-red-200 bg-[#fff5f5] px-4 py-3.5"
+        role="status"
+      >
+        <p class="text-sm text-red-600 leading-snug">
+          <span class="font-bold">{{ t("login.employeePortal") }}</span>
+          <span> – {{ t("login.employeePortalBanner") }}</span>
+        </p>
+      </div>
+
+      <div
+        class="rounded-2xl bg-white border border-zinc-200/90 shadow-[0_8px_30px_rgba(15,23,42,0.08)] px-6 py-6 sm:px-7 sm:py-7"
+      >
+        <h2 class="text-lg font-bold text-zinc-900">
+          {{ t("login.welcomeBack") }}
+        </h2>
+        <p class="mt-2 text-sm text-zinc-600 leading-relaxed">
+          {{ showAdminPassword ? t("login.hintAdminStep") : t("login.hint") }}
+        </p>
+
+        <form class="mt-6 flex flex-col gap-4" @submit.prevent="go">
+          <UFormField
+            :label="t('login.emailLabel')"
+            name="email"
+            class="w-full"
+            :ui="{ label: 'text-sm font-semibold text-zinc-800' }"
+          >
             <UInput
               v-model="email"
               type="email"
+              leading-icon="i-lucide-mail"
+              variant="subtle"
+              color="neutral"
+              size="lg"
               class="w-full"
+              :ui="{
+                base: 'bg-zinc-100 ring-1 ring-inset ring-zinc-200/90 placeholder:text-zinc-400 focus-visible:ring-zinc-300',
+              }"
               autocomplete="email"
               :placeholder="t('login.emailPlaceholder')"
             />
           </UFormField>
           <template v-if="showAdminPassword">
-            <UFormField :label="t('login.adminSecretLabel')" name="password" class="w-full">
+            <UFormField
+              :label="t('login.adminSecretLabel')"
+              name="password"
+              class="w-full"
+              :ui="{ label: 'text-sm font-semibold text-zinc-800' }"
+            >
               <UInput
                 v-model="password"
                 type="password"
+                variant="subtle"
+                color="neutral"
+                size="lg"
                 class="w-full"
+                :ui="{
+                  base: 'bg-zinc-100 ring-1 ring-inset ring-zinc-200/90 focus-visible:ring-zinc-300',
+                }"
                 autocomplete="current-password"
                 :placeholder="t('login.adminSecretPlaceholder')"
               />
             </UFormField>
-            <p class="text-[11px] text-slate-500 -mt-1">
-              {{ t('login.adminSecretHint') }}
+            <p class="text-xs text-zinc-500 -mt-1">
+              {{ t("login.adminSecretHint") }}
             </p>
           </template>
-          <p v-if="error" class="text-xs text-red-500">
+          <p v-if="error" class="text-sm text-red-600">
             {{ error }}
           </p>
 
           <UButton
             type="submit"
             color="primary"
+            size="lg"
             :loading="loading"
-            class="w-full mt-1 justify-center gap-2 font-semibold"
+            class="w-full mt-1 justify-center gap-2 font-semibold rounded-xl py-3"
           >
-            {{ t('login.submitButton') }}
-            <UIcon name="i-lucide-arrow-right" class="w-4 h-4" />
+            {{ t("login.submitButton") }}
+            <UIcon name="i-lucide-arrow-right" class="w-4 h-4 shrink-0" />
           </UButton>
 
-          <p class="mt-3 text-[10px] text-slate-400 text-center leading-relaxed">
-            {{ t('login.footer', { year: String(new Date().getFullYear()) }) }}
+          <p class="mt-2 text-[11px] text-zinc-400 text-center leading-relaxed">
+            {{ t("login.footer", { year: String(new Date().getFullYear()) }) }}
           </p>
         </form>
       </div>
