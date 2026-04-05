@@ -50,10 +50,15 @@ export default defineNuxtConfig({
     },
   },
 
-  /** Thème clair par défaut (sans imposer le mode système). La préférence reste mémorisée si l’utilisateur bascule. */
+  /**
+   * Thème clair par défaut sur toutes les pages. Ancienne clé localStorage `nuxt-color-mode`
+   * ignorée : nouvelle clé pour que le défaut s’applique même aux profils déjà en « sombre ».
+   * La préférence choisie via le bouton thème est toujours enregistrée sous `storageKey`.
+   */
   colorMode: {
     preference: "light",
     fallback: "light",
+    storageKey: "cardyo-color-mode",
     classSuffix: "",
     disableTransition: true,
   },
