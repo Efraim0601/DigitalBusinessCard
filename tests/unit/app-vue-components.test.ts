@@ -38,11 +38,14 @@ describe("app Vue shells and buttons", () => {
   it("TheCreateButton uses location.origin after mount", async () => {
     const loc = { origin: "https://example.test" };
     vi.stubGlobal("location", loc as Location);
+    vi.stubGlobal("useAppLocale", () => ({ t: (k: string) => k }));
     const w = mount(TheCreateButton, {
       global: { stubs: { UButton: stubBtn } },
     });
     await w.vm.$nextTick();
     expect(w.find("a").attributes("href")).toBe("https://example.test");
+    w.unmount();
+    vi.unstubAllGlobals();
   });
 
   it("ThemePickerButton renders label and leading chip", () => {
