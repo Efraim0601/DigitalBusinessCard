@@ -28,13 +28,16 @@
     "dotenv": "^16.4.7",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.0",
+    "jszip": "^3.10.1",
     "nuxt": "^3.16.1",
     "pg": "^8.11.5",
     "uqr": "^0.1.2",
-    "vcard-creator": "^0.7.1"
+    "vcard-creator": "^0.7.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.2.0",
+    "@types/jszip": "^3.4.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/coverage-v8": "^4.1.1",
     "@vue/test-utils": "^2.4.6",
