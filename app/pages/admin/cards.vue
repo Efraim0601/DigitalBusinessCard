@@ -703,7 +703,73 @@ watch(activeTab, (tab) => {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-[2fr,1.2fr] gap-6">
+      <div class="flex flex-col gap-6">
+        <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
+          <h2 class="text-lg font-semibold mb-1">
+            {{ editing?.id ? t("admin.editCard") : t("admin.createCardForm") }}
+          </h2>
+          <p class="text-xs text-zinc-500 mb-2">
+            {{ t("admin.helpText") }}
+          </p>
+
+          <div v-if="editing" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <UFormField :label="t('admin.email')" required class="sm:col-span-2">
+              <UInput v-model="editing.email" type="email" />
+            </UFormField>
+            <UFormField :label="t('admin.firstName')">
+              <UInput v-model="editing.first_name" />
+            </UFormField>
+            <UFormField :label="t('admin.lastName')">
+              <UInput v-model="editing.last_name" />
+            </UFormField>
+
+            <UFormField :label="t('admin.department')" class="sm:col-span-2">
+              <select
+                v-model="departmentSelectValue"
+                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+              >
+                <option v-for="opt in departmentOptions" :key="String(opt.value)" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </UFormField>
+
+            <UFormField :label="t('admin.titleField')" class="sm:col-span-2">
+              <select
+                v-model="jobTitleSelectValue"
+                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
+              >
+                <option v-for="opt in jobTitleOptions" :key="String(opt.value)" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </UFormField>
+
+            <UFormField :label="t('admin.phone')">
+              <UInput :model-value="FIXED_PHONE" readonly />
+            </UFormField>
+            <UFormField :label="t('admin.fax')">
+              <UInput :model-value="FIXED_FAX" readonly />
+            </UFormField>
+            <UFormField :label="t('admin.mobile')">
+              <UInput v-model="editing.mobile" inputmode="numeric" />
+            </UFormField>
+
+            <div class="flex flex-wrap gap-2 pt-2 sm:col-span-2 lg:col-span-3">
+              <UButton color="primary" @click="saveCard">
+                {{ t("admin.save") }}
+              </UButton>
+              <UButton variant="ghost" @click="editing = null">
+                {{ t("admin.cancel") }}
+              </UButton>
+            </div>
+          </div>
+
+          <p v-else class="text-sm text-zinc-500">
+            {{ t("admin.selectOrCreate") }}
+          </p>
+        </div>
+
         <div class="overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 shadow-sm">
           <table class="min-w-full text-sm">
             <thead class="bg-zinc-50 dark:bg-zinc-800">
@@ -792,72 +858,6 @@ watch(activeTab, (tab) => {
           </UButton>
         </div>
       </div>
-
-        <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
-          <h2 class="text-lg font-semibold mb-1">
-            {{ editing?.id ? t("admin.editCard") : t("admin.createCardForm") }}
-          </h2>
-          <p class="text-xs text-zinc-500 mb-2">
-            {{ t("admin.helpText") }}
-          </p>
-
-          <div v-if="editing" class="space-y-2">
-            <UFormField :label="t('admin.email')" required>
-              <UInput v-model="editing.email" type="email" />
-            </UFormField>
-            <UFormField :label="t('admin.firstName')">
-              <UInput v-model="editing.first_name" />
-            </UFormField>
-            <UFormField :label="t('admin.lastName')">
-              <UInput v-model="editing.last_name" />
-            </UFormField>
-
-            <UFormField :label="t('admin.department')">
-              <select
-                v-model="departmentSelectValue"
-                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
-              >
-                <option v-for="opt in departmentOptions" :key="String(opt.value)" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </UFormField>
-
-            <UFormField :label="t('admin.titleField')">
-              <select
-                v-model="jobTitleSelectValue"
-                class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-sm"
-              >
-                <option v-for="opt in jobTitleOptions" :key="String(opt.value)" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </UFormField>
-
-            <UFormField :label="t('admin.phone')">
-              <UInput :model-value="FIXED_PHONE" readonly />
-            </UFormField>
-            <UFormField :label="t('admin.fax')">
-              <UInput :model-value="FIXED_FAX" readonly />
-            </UFormField>
-            <UFormField :label="t('admin.mobile')">
-              <UInput v-model="editing.mobile" inputmode="numeric" />
-            </UFormField>
-
-            <div class="flex gap-2 pt-2">
-              <UButton color="primary" @click="saveCard">
-                {{ t("admin.save") }}
-              </UButton>
-              <UButton variant="ghost" @click="editing = null">
-                {{ t("admin.cancel") }}
-              </UButton>
-            </div>
-          </div>
-
-          <p v-else class="text-sm text-zinc-500">
-            {{ t("admin.selectOrCreate") }}
-          </p>
-        </div>
       </div>
     </template>
 
