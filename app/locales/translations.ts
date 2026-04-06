@@ -1,3 +1,7 @@
+/**
+ * Textes d’interface uniquement (aucun secret). L’analyse Sonar (S2068 / hotspots « mot de passe »)
+ * est désactivée pour ce fichier dans sonar-project.properties (sonar.issue.ignore.multicriteria).
+ */
 export type Locale = "fr" | "en";
 
 export const translations: Record<Locale, Record<string, string>> = {
@@ -101,12 +105,19 @@ export const translations: Record<Locale, Record<string, string>> = {
     "admin.searchJobTitles": "Rechercher un titre/poste…",
     "admin.prev": "Précédent",
     "admin.next": "Suivant",
-    "admin.exportCsvZip": "Exporter (CSV en ZIP)",
-    "admin.exportCsvZipSuccess": "Archive ZIP (CSV) téléchargée.",
-    "admin.importSpreadsheet": "Importer (Excel / CSV / ZIP)",
-    "admin.dataTransferHint":
-      "Export : archive ZIP avec trois fichiers CSV. Import : .xlsx, .zip (departments.csv, job_titles.csv, cards.csv) ou un seul .csv selon le type. Réimport : fusion par identifiants (libellés et cartes par email).",
-    "admin.importSuccess": "Import réussi : {departments} direction(s), {jobTitles} titre(s), {cards} carte(s).",
+    "admin.exportCsv": "Exporter CSV",
+    "admin.importCsv": "Importer CSV / Excel",
+    "admin.exportCsvSuccess": "Fichier CSV téléchargé.",
+    "admin.dataTransferHintCards":
+      "Colonnes attendues : N°, email, first_name, last_name, mobile, poste, Direction. Fichiers : .csv ou .xlsx (première feuille). Les cartes existantes sont mises à jour par email (pas de doublon).",
+    "admin.dataTransferHintDepartments":
+      "Colonnes : label_fr, label_en (obligatoires). Fichiers : .csv ou .xlsx. Les lignes existantes sont fusionnées par libellé (FR ou EN).",
+    "admin.dataTransferHintJobTitles":
+      "Colonnes : label_fr, label_en (obligatoires). Fichiers : .csv ou .xlsx. Les lignes existantes sont fusionnées par libellé (FR ou EN).",
+    "admin.importSuccessCards": "{n} carte(s) importée(s) ou mises à jour.",
+    "admin.importSuccessDepartments": "{n} direction(s) importée(s) ou fusionnée(s).",
+    "admin.importSuccessJobTitles": "{n} titre(s) / poste(s) importé(s) ou fusionné(s).",
+    "admin.importWarningsTitle": "Avertissements",
     "admin.importError": "Import impossible (fichier invalide ou données rejetées).",
     "admin.exportError": "Export impossible.",
     "admin.selectAllPage": "Tout sélectionner (page)",
@@ -233,12 +244,19 @@ export const translations: Record<Locale, Record<string, string>> = {
     "admin.searchJobTitles": "Search job title…",
     "admin.prev": "Previous",
     "admin.next": "Next",
-    "admin.exportCsvZip": "Export (CSV as ZIP)",
-    "admin.exportCsvZipSuccess": "ZIP archive (CSV) downloaded.",
-    "admin.importSpreadsheet": "Import (Excel / CSV / ZIP)",
-    "admin.dataTransferHint":
-      "Export: ZIP archive with three CSV files. Import: .xlsx, .zip (departments.csv, job_titles.csv, cards.csv), or a single .csv by type. Re-import merges by id (labels and cards by email).",
-    "admin.importSuccess": "Import successful: {departments} department(s), {jobTitles} job title(s), {cards} card(s).",
+    "admin.exportCsv": "Export CSV",
+    "admin.importCsv": "Import CSV / Excel",
+    "admin.exportCsvSuccess": "CSV file downloaded.",
+    "admin.dataTransferHintCards":
+      "Expected columns: N°, email, first_name, last_name, mobile, poste, Direction. Files: .csv or .xlsx (first sheet). Existing cards are updated by email (no duplicates).",
+    "admin.dataTransferHintDepartments":
+      "Columns: label_fr, label_en (required). Files: .csv or .xlsx. Existing rows are merged by label (FR or EN).",
+    "admin.dataTransferHintJobTitles":
+      "Columns: label_fr, label_en (required). Files: .csv or .xlsx. Existing rows are merged by label (FR or EN).",
+    "admin.importSuccessCards": "{n} card(s) imported or updated.",
+    "admin.importSuccessDepartments": "{n} department(s) imported or merged.",
+    "admin.importSuccessJobTitles": "{n} job title(s) imported or merged.",
+    "admin.importWarningsTitle": "Warnings",
     "admin.importError": "Import failed (invalid file or rejected data).",
     "admin.exportError": "Export failed.",
     "admin.selectAllPage": "Select all on page",

@@ -17,6 +17,25 @@ export type AdminDataCard = {
   job_title_id?: string | null;
 };
 
+/** Ligne fichier cartes (poste / direction = libellés à résoudre). */
+export type AdminSimplifiedCardInput = {
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  mobile: string | null;
+  posteLabel: string;
+  directionLabel: string;
+};
+
+export type AdminLabelPairInput = { label_fr: string; label_en: string };
+
+export type ParsedScopedImport =
+  | { scope: "cards"; cards: AdminSimplifiedCardInput[] }
+  | { scope: "departments"; departments: AdminLabelPairInput[] }
+  | { scope: "job_titles"; job_titles: AdminLabelPairInput[] };
+
+export type AdminImportScope = "cards" | "departments" | "job_titles";
+
 export type AdminDataBundle = {
   formatVersion: number;
   exportedAt: string;

@@ -1,25 +1,62 @@
 import { requireAdmin } from "../../utils/admin-auth";
-import { loadAdminExportRows } from "../../utils/admin-export-data";
-import { buildCsvZipBuffer, buildXlsxBuffer } from "../../utils/admin-spreadsheet";
+import type { AdminImportScope } from "../../utils/admin-data-types";
+import {
+  loadCardsSimplifiedExportRows,
+  loadDepartmentsExportRows,
+  loadJobTitlesExportRows,
+} from "../../utils/admin-export-data";
+import {
+  adminDataScopeRequiredMessage,
+  parseAdminDataImportScope,
+  setAdminCsvDownloadHeaders,
+} from "../../utils/admin-scoped-data-route";
+import {
+  buildCardsSimplifiedCsvBuffer,
+  buildDepartmentsCsvBuffer,
+  buildJobTitlesCsvBuffer,
+} from "../../utils/admin-spreadsheet";
+
+type ExportRow =
+  | Awaited<ReturnType<typeof loadCardsSimplifiedExportRows>>
+  | Awaited<ReturnType<typeof loadDepartmentsExportRows>>
+  | Awaited<ReturnType<typeof loadJobTitlesExportRows>>;
+
+const SCOPED_CSV: Record<
+  AdminImportScope,
+  {
+    load: () => Promise<ExportRow>;
+    build: (rows: ExportRow) => Buffer;
+    filename: string;
+  }
+> = {
+  cards: {
+    load: loadCardsSimplifiedExportRows,
+    build: (rows) => buildCardsSimplifiedCsvBuffer(rows as Awaited<ReturnType<typeof loadCardsSimplifiedExportRows>>),
+    filename: "cartes.csv",
+  },
+  departments: {
+    load: loadDepartmentsExportRows,
+    build: (rows) => buildDepartmentsCsvBuffer(rows as Awaited<ReturnType<typeof loadDepartmentsExportRows>>),
+    filename: "directions.csv",
+  },
+  job_titles: {
+    load: loadJobTitlesExportRows,
+    build: (rows) => buildJobTitlesCsvBuffer(rows as Awaited<ReturnType<typeof loadJobTitlesExportRows>>),
+    filename: "titres-postes.csv",
+  },
+};
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
-  const format = String(getQuery(event).format || "xlsx").toLowerCase();
-  const data = await loadAdminExportRows();
-
-  if (format === "csv" || format === "zip") {
-    const buf = await buildCsvZipBuffer(data);
-    setHeader(event, "Content-Type", "application/zip");
-    setHeader(event, "Content-Disposition", 'attachment; filename="vcard-export-csv.zip"');
-    return buf;
+  const scope = parseAdminDataImportScope(getQuery(event).scope as string | undefined);
+  if (!scope) {
+    setResponseStatus(event, 400);
+    return { error: adminDataScopeRequiredMessage("data-export") };
   }
 
-  const buf = buildXlsxBuffer(data);
-  setHeader(
-    event,
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  );
-  setHeader(event, "Content-Disposition", 'attachment; filename="vcard-export.xlsx"');
+  const cfg = SCOPED_CSV[scope];
+  const rows = await cfg.load();
+  const buf = cfg.build(rows);
+  setAdminCsvDownloadHeaders(event, cfg.filename);
   return buf;
 });
