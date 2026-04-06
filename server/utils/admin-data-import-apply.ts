@@ -271,3 +271,8 @@ export async function applyAdminDataImport(): Promise<never> {
     data: { error: "Import global retiré : utilisez ?scope=cards|departments|job_titles" },
   });
 }
+
+/** Réservé aux tests unitaires (résolution de libellés, branches défensives). */
+export const __adminImportApplyTest = {
+  resolveLabelEntityByName,
+} as const;
