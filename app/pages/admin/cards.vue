@@ -369,7 +369,7 @@ async function exportScopedCsv(scope: AdminImportScope) {
       query: { scope },
       responseType: "arrayBuffer",
     });
-    if (!import.meta.client) return;
+    if (typeof document === "undefined") return;
     const blob = new Blob([buf], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

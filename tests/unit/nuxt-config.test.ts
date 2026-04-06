@@ -5,6 +5,16 @@ type NuxtConfigShape = {
   fonts?: { families: Array<{ name: string; provider: string }> };
   runtimeConfig: { adminEmail: string };
   routeRules: Record<string, { cors: boolean }>;
+  pwa?: {
+    injectRegister?: string;
+    includeAssets?: string[];
+    manifest?: {
+      name?: string;
+      short_name?: string;
+      theme_color?: string;
+      icons?: Array<{ src?: string; sizes?: string; type?: string; purpose?: string }>;
+    };
+  };
   vite: {
     build: {
       rollupOptions: {
@@ -61,5 +71,16 @@ describe("nuxt.config.ts", () => {
     expect(chunker("/x/node_modules/nuxt-qrcode/index.js")).toBe("qrcode");
     expect(chunker("/x/node_modules/uqr/index.js")).toBe("qrcode");
     expect(chunker("/x/src/main.ts")).toBeUndefined();
+  });
+
+  it("active le module PWA avec manifest et icônes", async () => {
+    const config = await importNuxtConfig();
+    expect(config.modules).toContain("@vite-pwa/nuxt");
+    expect(config.pwa?.injectRegister).toBe("auto");
+    expect(config.pwa?.includeAssets?.length).toBeGreaterThan(0);
+    expect(config.pwa?.manifest?.short_name).toBeTruthy();
+    expect(config.pwa?.manifest?.icons?.length).toBeGreaterThanOrEqual(2);
+    const png192 = config.pwa?.manifest?.icons?.find((i) => i.sizes === "192x192");
+    expect(png192?.src).toMatch(/192/);
   });
 });
