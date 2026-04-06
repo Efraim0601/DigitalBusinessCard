@@ -1,62 +1,55 @@
+import { setResponseHeader } from "h3";
 import { requireAdmin } from "../../utils/admin-auth";
-import type { AdminImportScope } from "../../utils/admin-data-types";
 import {
   loadCardsSimplifiedExportRows,
   loadDepartmentsExportRows,
   loadJobTitlesExportRows,
 } from "../../utils/admin-export-data";
-import {
-  adminDataScopeRequiredMessage,
-  parseAdminDataImportScope,
-  setAdminCsvDownloadHeaders,
-} from "../../utils/admin-scoped-data-route";
+import type { AdminImportScope } from "../../utils/admin-data-types";
 import {
   buildCardsSimplifiedCsvBuffer,
   buildDepartmentsCsvBuffer,
   buildJobTitlesCsvBuffer,
 } from "../../utils/admin-spreadsheet";
 
-type ExportRow =
-  | Awaited<ReturnType<typeof loadCardsSimplifiedExportRows>>
-  | Awaited<ReturnType<typeof loadDepartmentsExportRows>>
-  | Awaited<ReturnType<typeof loadJobTitlesExportRows>>;
+const SCOPES: AdminImportScope[] = ["cards", "departments", "job_titles"];
 
-const SCOPED_CSV: Record<
-  AdminImportScope,
-  {
-    load: () => Promise<ExportRow>;
-    build: (rows: ExportRow) => Buffer;
-    filename: string;
-  }
-> = {
-  cards: {
-    load: loadCardsSimplifiedExportRows,
-    build: (rows) => buildCardsSimplifiedCsvBuffer(rows as Awaited<ReturnType<typeof loadCardsSimplifiedExportRows>>),
-    filename: "cartes.csv",
-  },
-  departments: {
-    load: loadDepartmentsExportRows,
-    build: (rows) => buildDepartmentsCsvBuffer(rows as Awaited<ReturnType<typeof loadDepartmentsExportRows>>),
-    filename: "directions.csv",
-  },
-  job_titles: {
-    load: loadJobTitlesExportRows,
-    build: (rows) => buildJobTitlesCsvBuffer(rows as Awaited<ReturnType<typeof loadJobTitlesExportRows>>),
-    filename: "titres-postes.csv",
-  },
-};
+function parseScope(raw: string | undefined): AdminImportScope | null {
+  if (!raw || typeof raw !== "string") return null;
+  const s = raw.trim().toLowerCase();
+  return SCOPES.includes(s as AdminImportScope) ? (s as AdminImportScope) : null;
+}
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
-  const scope = parseAdminDataImportScope(getQuery(event).scope as string | undefined);
+  const scope = parseScope(getQuery(event).scope as string | undefined);
   if (!scope) {
     setResponseStatus(event, 400);
-    return { error: adminDataScopeRequiredMessage("data-export") };
+    return {
+      error:
+        "Paramètre « scope » requis : cards, departments ou job_titles (ex. /api/admin/data-export?scope=cards).",
+    };
   }
 
-  const cfg = SCOPED_CSV[scope];
-  const rows = await cfg.load();
-  const buf = cfg.build(rows);
-  setAdminCsvDownloadHeaders(event, cfg.filename);
+  if (scope === "cards") {
+    const rows = await loadCardsSimplifiedExportRows();
+    const buf = buildCardsSimplifiedCsvBuffer(rows);
+    setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
+    setResponseHeader(event, "Content-Disposition", 'attachment; filename="cartes.csv"');
+    return buf;
+  }
+
+  if (scope === "departments") {
+    const rows = await loadDepartmentsExportRows();
+    const buf = buildDepartmentsCsvBuffer(rows);
+    setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
+    setResponseHeader(event, "Content-Disposition", 'attachment; filename="directions.csv"');
+    return buf;
+  }
+
+  const rows = await loadJobTitlesExportRows();
+  const buf = buildJobTitlesCsvBuffer(rows);
+  setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
+  setResponseHeader(event, "Content-Disposition", 'attachment; filename="titres-postes.csv"');
   return buf;
 });

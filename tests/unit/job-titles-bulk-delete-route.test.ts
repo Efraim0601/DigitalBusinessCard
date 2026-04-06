@@ -19,8 +19,10 @@ vi.mock("../../server/utils/label-list-cache", () => ({
   invalidateLabelListCache: mocks.invalidateLabelListCache,
 }));
 
-// eslint-disable-next-line import/first
 import bulkDeleteHandler from "../../server/api/job-titles/bulk-delete.post";
+
+const UUID_A = "550e8400-e29b-41d4-a716-446655440001";
+const UUID_B = "550e8400-e29b-41d4-a716-446655440002";
 
 describe("POST /api/job-titles/bulk-delete", () => {
   beforeEach(() => {
@@ -44,22 +46,51 @@ describe("POST /api/job-titles/bulk-delete", () => {
     expect(mocks.invalidateLabelListCache).not.toHaveBeenCalled();
   });
 
-  it("supprime, invalide le cache titres et retourne deleted", async () => {
-    mocks.query.mockResolvedValue({ rows: [{ id: "j1" }, { id: "j2" }] });
+  it("400 si aucun UUID valide après filtrage", async () => {
     const ev = testH3Event(
       new Request("http://localhost/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ids: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
-        }),
+        body: JSON.stringify({ ids: ["not-a-uuid", 123, null] }),
+      })
+    );
+    const res = await bulkDeleteHandler(ev);
+    expect(res).toMatchObject({ error: expect.stringContaining("UUIDs") });
+    expect(ev.node.res.statusCode).toBe(400);
+  });
+
+  it("400 si plus de 500 ids", async () => {
+    const many = Array.from({ length: 501 }, (_, i) => {
+      const tail = i.toString(16).padStart(12, "0");
+      return `550e8400-e29b-41d4-a716-${tail}`;
+    });
+    const ev = testH3Event(
+      new Request("http://localhost/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: many }),
+      })
+    );
+    const res = await bulkDeleteHandler(ev);
+    expect(res).toMatchObject({ error: expect.stringContaining("500") });
+    expect(ev.node.res.statusCode).toBe(400);
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("supprime, invalide le cache job_titles et retourne deleted", async () => {
+    mocks.query.mockResolvedValue({ rows: [{ id: UUID_A }, { id: UUID_B }] });
+    const ev = testH3Event(
+      new Request("http://localhost/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [UUID_A, UUID_B] }),
       })
     );
     const res = await bulkDeleteHandler(ev);
     expect(res).toEqual({ success: true, deleted: 2 });
     expect(mocks.query).toHaveBeenCalledWith(
       expect.stringContaining("DELETE FROM job_titles"),
-      expect.any(Array)
+      [[UUID_A, UUID_B]]
     );
     expect(mocks.invalidateLabelListCache).toHaveBeenCalledWith("job_titles");
   });

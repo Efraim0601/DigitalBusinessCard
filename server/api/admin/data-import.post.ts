@@ -1,19 +1,27 @@
 import { readMultipartFormData } from "h3";
 import { requireAdmin } from "../../utils/admin-auth";
 import { applyScopedImport } from "../../utils/admin-data-import-apply";
+import type { AdminImportScope } from "../../utils/admin-data-types";
 import { MAX_ADMIN_UPLOAD_BYTES } from "../../utils/admin-import-validation";
-import {
-  adminDataScopeRequiredMessage,
-  parseAdminDataImportScope,
-} from "../../utils/admin-scoped-data-route";
 import { parseScopedImportBuffer } from "../../utils/admin-spreadsheet";
+
+const SCOPES: AdminImportScope[] = ["cards", "departments", "job_titles"];
+
+function parseScope(raw: string | undefined): AdminImportScope | null {
+  if (!raw || typeof raw !== "string") return null;
+  const s = raw.trim().toLowerCase();
+  return SCOPES.includes(s as AdminImportScope) ? (s as AdminImportScope) : null;
+}
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
-  const scope = parseAdminDataImportScope(getQuery(event).scope as string | undefined);
+  const scope = parseScope(getQuery(event).scope as string | undefined);
   if (!scope) {
     setResponseStatus(event, 400);
-    return { error: adminDataScopeRequiredMessage("data-import") };
+    return {
+      error:
+        "Paramètre « scope » requis : cards, departments ou job_titles (ex. /api/admin/data-import?scope=cards).",
+    };
   }
 
   const parts = await readMultipartFormData(event);

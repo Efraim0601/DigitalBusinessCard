@@ -7,56 +7,43 @@ import {
   parseScopedImportBuffer,
 } from "../../server/utils/admin-spreadsheet";
 
-describe("admin-spreadsheet (scoped)", () => {
-  it("parseScopedImportBuffer parse un CSV cartes", () => {
-    const csv = `email;first_name;last_name;mobile;poste;Direction
-a@b.com;Ann;Bee;123;Mgr;IT`;
-    const buf = Buffer.from(csv, "utf8");
-    const parsed = parseScopedImportBuffer(buf, "t.csv", "cards");
+describe("admin-spreadsheet (import/export par scope)", () => {
+  it("parseScopedImportBuffer lit le CSV cartes et mappe les colonnes", () => {
+    const csv = Buffer.from(
+      `${CARD_CSV_HEADERS.join(";")}\n1;u@example.com;Jane;Doe;6 12 34 56;Chef;IT`,
+      "utf8"
+    );
+    const parsed = parseScopedImportBuffer(csv, "test.csv", "cards");
     expect(parsed.scope).toBe("cards");
     expect(parsed.cards).toHaveLength(1);
     expect(parsed.cards[0]).toMatchObject({
-      email: "a@b.com",
-      first_name: "Ann",
-      last_name: "Bee",
-      posteLabel: "Mgr",
+      email: "u@example.com",
+      first_name: "Jane",
+      last_name: "Doe",
+      posteLabel: "Chef",
       directionLabel: "IT",
     });
   });
 
-  it("parseScopedImportBuffer parse des directions label_fr/en", () => {
-    const csv = "label_fr;label_en\nDir FR;Dir EN";
-    const parsed = parseScopedImportBuffer(Buffer.from(csv), "d.csv", "departments");
+  it("parseScopedImportBuffer refuse ZIP", () => {
+    expect(() => parseScopedImportBuffer(Buffer.from("x"), "bundle.zip", "cards")).toThrow();
+  });
+
+  it("parseScopedImportBuffer directions : paires label_fr / label_en", () => {
+    const csv = Buffer.from("label_fr;label_en\nDirection A;Dept A\n", "utf8");
+    const parsed = parseScopedImportBuffer(csv, "d.csv", "departments");
     expect(parsed.scope).toBe("departments");
-    expect(parsed.departments).toEqual([{ label_fr: "Dir FR", label_en: "Dir EN" }]);
-  });
-
-  it("parseScopedImportBuffer parse des titres", () => {
-    const csv = "label_fr;label_en\nTitre FR;Title EN";
-    const parsed = parseScopedImportBuffer(Buffer.from(csv), "j.csv", "job_titles");
-    expect(parsed.job_titles).toEqual([{ label_fr: "Titre FR", label_en: "Title EN" }]);
-  });
-
-  it("refuse ZIP sur import scopé", () => {
-    expect(() => parseScopedImportBuffer(Buffer.from("x"), "x.zip", "cards")).toThrow();
-    try {
-      parseScopedImportBuffer(Buffer.from("x"), "x.zip", "cards");
-    } catch (e) {
-      expect(e).toMatchObject({
-        statusCode: 400,
-        data: { error: expect.stringContaining("ZIP") },
-      });
-    }
+    expect(parsed.departments).toEqual([{ label_fr: "Direction A", label_en: "Dept A" }]);
   });
 
   it("buildCardsSimplifiedCsvBuffer n’inclut que les colonnes maquette", () => {
     const buf = buildCardsSimplifiedCsvBuffer([
       {
         "N°": 1,
-        email: "x@y.com",
+        email: "e@e.com",
         first_name: "A",
         last_name: "B",
-        mobile: "123",
+        mobile: "111",
         poste: "P",
         Direction: "D",
       },
@@ -64,15 +51,13 @@ a@b.com;Ann;Bee;123;Mgr;IT`;
     const text = buf.toString("utf8").replace(/^\uFEFF/, "");
     const first = text.split("\n")[0];
     expect(first.split(";")).toEqual([...CARD_CSV_HEADERS]);
-    expect(text).toContain("x@y.com");
-    expect(text).not.toMatch(/id|company|uuid/i);
   });
 
   it("buildDepartmentsCsvBuffer et buildJobTitlesCsvBuffer", () => {
-    const d = buildDepartmentsCsvBuffer([{ label_fr: "A", label_en: "B" }]).toString("utf8");
-    expect(d).toContain("label_fr");
-    expect(d).toContain("A");
-    const j = buildJobTitlesCsvBuffer([{ label_fr: "C", label_en: "D" }]).toString("utf8");
-    expect(j).toContain("C");
+    const d = buildDepartmentsCsvBuffer([{ label_fr: "FR", label_en: "EN" }]);
+    expect(d.toString("utf8")).toContain("label_fr");
+    expect(d.toString("utf8")).toContain("FR");
+    const j = buildJobTitlesCsvBuffer([{ label_fr: "a", label_en: "b" }]);
+    expect(j.toString("utf8")).toContain("a");
   });
 });

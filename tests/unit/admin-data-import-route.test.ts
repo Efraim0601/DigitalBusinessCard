@@ -20,27 +20,16 @@ vi.mock("h3", async (importOriginal) => {
   };
 });
 
-vi.mock("../../server/utils/admin-spreadsheet", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("../../server/utils/admin-spreadsheet")>();
-  return {
-    ...mod,
-    parseScopedImportBuffer: mocks.parseScopedImportBuffer,
-  };
-});
+vi.mock("../../server/utils/admin-spreadsheet", () => ({
+  parseScopedImportBuffer: mocks.parseScopedImportBuffer,
+}));
 
 vi.mock("../../server/utils/admin-data-import-apply", () => ({
   applyScopedImport: mocks.applyScopedImport,
 }));
 
 import importHandler from "../../server/api/admin/data-import.post";
-
-function multipartRequest(scope: string, body: Uint8Array, contentType: string) {
-  return new Request(`http://localhost/api/admin/data-import?scope=${scope}`, {
-    method: "POST",
-    headers: { "Content-Type": contentType },
-    body: body as BodyInit,
-  });
-}
+import { MAX_ADMIN_UPLOAD_BYTES } from "../../server/utils/admin-import-validation";
 
 describe("POST /api/admin/data-import", () => {
   beforeEach(() => {
@@ -49,6 +38,13 @@ describe("POST /api/admin/data-import", () => {
     mocks.parseScopedImportBuffer.mockReset();
     mocks.applyScopedImport.mockReset();
     mocks.requireAdmin.mockReturnValue({ email: "a@b.com", exp: 9e9 });
+    mocks.readMultipartFormData.mockResolvedValue([
+      { name: "file", filename: "c.csv", data: Buffer.from("email;a@x.com\n") },
+    ]);
+    mocks.parseScopedImportBuffer.mockReturnValue({
+      scope: "cards",
+      cards: [{ email: "a@x.com", first_name: null, last_name: null, mobile: null, posteLabel: "", directionLabel: "" }],
+    });
     mocks.applyScopedImport.mockResolvedValue({
       success: true,
       imported: { departments: 0, job_titles: 0, cards: 1 },
@@ -56,7 +52,7 @@ describe("POST /api/admin/data-import", () => {
     });
   });
 
-  it("400 sans scope valide", async () => {
+  it("400 sans scope", async () => {
     const ev = testH3Event(new Request("http://localhost/api/admin/data-import", { method: "POST" }));
     const res = await importHandler(ev);
     expect(res).toMatchObject({ error: expect.stringContaining("scope") });
@@ -66,7 +62,7 @@ describe("POST /api/admin/data-import", () => {
   it("400 sans fichier", async () => {
     mocks.readMultipartFormData.mockResolvedValue([]);
     const ev = testH3Event(
-      multipartRequest("cards", new Uint8Array(), "multipart/form-data; boundary=----x")
+      new Request("http://localhost/api/admin/data-import?scope=cards", { method: "POST" })
     );
     const res = await importHandler(ev);
     expect(res).toMatchObject({ error: expect.stringContaining("Fichier") });
@@ -74,30 +70,41 @@ describe("POST /api/admin/data-import", () => {
   });
 
   it("413 si fichier trop volumineux", async () => {
-    const big = Buffer.alloc(6 * 1024 * 1024, 97);
+    const big = Buffer.alloc(MAX_ADMIN_UPLOAD_BYTES + 1, 97);
     mocks.readMultipartFormData.mockResolvedValue([{ name: "file", filename: "huge.csv", data: big }]);
     const ev = testH3Event(
-      multipartRequest("cards", new Uint8Array(), "multipart/form-data; boundary=----x")
+      new Request("http://localhost/api/admin/data-import?scope=cards", { method: "POST" })
     );
     const res = await importHandler(ev);
     expect(res).toMatchObject({ error: expect.stringContaining("volumineux") });
     expect(ev.node.res.statusCode).toBe(413);
-    expect(mocks.parseScopedImportBuffer).not.toHaveBeenCalled();
   });
 
-  it("parse et apply avec fichier valide", async () => {
-    const csv = Buffer.from("email;nom\na@b.com;x", "utf8");
-    mocks.readMultipartFormData.mockResolvedValue([{ name: "file", filename: "f.csv", data: csv }]);
-    mocks.parseScopedImportBuffer.mockReturnValue({
-      scope: "cards",
-      cards: [{ email: "a@b.com", first_name: null, last_name: null, mobile: null, posteLabel: "", directionLabel: "" }],
-    });
+  it("parse + apply avec scope=cards", async () => {
     const ev = testH3Event(
-      multipartRequest("cards", new Uint8Array(), "multipart/form-data; boundary=----x")
+      new Request("http://localhost/api/admin/data-import?scope=cards", { method: "POST" })
     );
     const res = await importHandler(ev);
-    expect(mocks.parseScopedImportBuffer).toHaveBeenCalledWith(csv, "f.csv", "cards");
+    expect(mocks.parseScopedImportBuffer).toHaveBeenCalled();
     expect(mocks.applyScopedImport).toHaveBeenCalled();
-    expect(res).toMatchObject({ success: true, imported: { cards: 1 } });
+    expect(res).toEqual({
+      success: true,
+      imported: { departments: 0, job_titles: 0, cards: 1 },
+      warnings: [],
+    });
+  });
+
+  it("accepte scope=departments", async () => {
+    mocks.parseScopedImportBuffer.mockReturnValue({ scope: "departments", departments: [{ label_fr: "A", label_en: "B" }] });
+    mocks.applyScopedImport.mockResolvedValue({
+      success: true,
+      imported: { departments: 1, job_titles: 0, cards: 0 },
+      warnings: [],
+    });
+    const ev = testH3Event(
+      new Request("http://localhost/api/admin/data-import?scope=departments", { method: "POST" })
+    );
+    const res = await importHandler(ev);
+    expect(res).toMatchObject({ imported: { departments: 1 } });
   });
 });

@@ -1,7 +1,3 @@
-/**
- * Textes d’interface uniquement (aucun secret). L’analyse Sonar (S2068 / hotspots « mot de passe »)
- * est désactivée pour ce fichier dans sonar-project.properties (sonar.issue.ignore.multicriteria).
- */
 export type Locale = "fr" | "en";
 
 export const translations: Record<Locale, Record<string, string>> = {
@@ -82,15 +78,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     "admin.tabAccount": "Compte admin",
     "admin.accountTitle": "Identifiants de connexion administrateur",
     "admin.accountHelp": "Après enregistrement, les identifiants sont stockés en base et remplacent les variables d'environnement pour la connexion.",
-    "admin.accountCurrentPassword": "Mot de passe actuel",
+    "admin.accountCurrentPassword": "Mot de passe actuel", // NOSONAR S2068 - libellé i18n, pas un secret
     "admin.accountNewEmail": "Nouvel email (optionnel)",
-    "admin.accountNewPassword": "Nouveau mot de passe (optionnel)",
+    "admin.accountNewPassword": "Nouveau mot de passe (optionnel)", // NOSONAR S2068 - libellé i18n, pas un secret
     "admin.accountSave": "Mettre à jour les identifiants",
     "admin.accountSaved": "Identifiants mis à jour.",
     "admin.accountError": "Échec de la mise à jour.",
     "admin.accountStoredInDb": "Source : base de données",
     "admin.accountStoredInEnv": "Source : configuration (variables d'environnement)",
-    "admin.accountNothingToChange": "Indiquez un nouvel email ou un nouveau mot de passe.",
+    "admin.accountNothingToChange": "Indiquez un nouvel email ou un nouveau mot de passe.", // NOSONAR S2068 - libellé i18n, pas un secret
     "admin.addDepartment": "Ajouter une direction",
     "admin.addJobTitle": "Ajouter un titre ou poste",
     "admin.labelFr": "Libellé (français)",
@@ -133,13 +129,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     "login.employeePortalDesc": "Accédez à votre carte de visite numérique et partagez-la en toute sécurité sur tous vos canaux.",
     "login.welcomeBack": "Bienvenue",
     "login.hint": "Saisissez votre email professionnel pour accéder à votre carte de visite numérique.",
-    "login.hintAdminStep": "Compte administrateur : saisissez le mot de passe pour accéder à la gestion des cartes.",
-    "login.adminPasswordRequired": "Mot de passe administrateur requis pour cet email.",
+    "login.hintAdminStep": "Compte administrateur : saisissez le mot de passe pour accéder à la gestion des cartes.", // NOSONAR S2068 - libellé i18n, pas un secret
+    "login.adminPasswordRequired": "Mot de passe administrateur requis pour cet email.", // NOSONAR S2068 - libellé i18n, pas un secret
     "login.emailLabel": "Email professionnel",
     "login.emailPlaceholder": "ex. nom@afrilandfirstbank.com",
-    "login.adminSecretLabel": "Mot de passe administrateur",
-    "login.adminSecretPlaceholder": "Mot de passe",
-    "login.adminSecretHint": "Réservé à la connexion administration. Ne communiquez jamais ce mot de passe.",
+    "login.adminSecretLabel": "Mot de passe administrateur", // NOSONAR S2068 - libellé i18n, pas un secret
+    "login.adminSecretPlaceholder": "Mot de passe", // NOSONAR S2068 - libellé i18n, pas un secret
+    "login.adminSecretHint": "Réservé à la connexion administration. Ne communiquez jamais ce mot de passe.", // NOSONAR S2068 - libellé i18n, pas un secret
     "login.authFailed": "Authentification admin invalide.",
     "login.submitButton": "Voir ma carte",
     "login.footer": "Accès sécurisé réservé au personnel autorisé. © {year} Afriland First Bank Group.",
@@ -221,15 +217,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     "admin.tabAccount": "Admin account",
     "admin.accountTitle": "Administrator sign-in credentials",
     "admin.accountHelp": "After saving, credentials are stored in the database and override environment variables for sign-in.",
-    "admin.accountCurrentPassword": "Current password",
+    "admin.accountCurrentPassword": "Current password", // NOSONAR S2068 - i18n UI label, not a secret
     "admin.accountNewEmail": "New email (optional)",
-    "admin.accountNewPassword": "New password (optional)",
+    "admin.accountNewPassword": "New password (optional)", // NOSONAR S2068 - i18n UI label, not a secret
     "admin.accountSave": "Update credentials",
     "admin.accountSaved": "Credentials updated.",
     "admin.accountError": "Update failed.",
     "admin.accountStoredInDb": "Source: database",
     "admin.accountStoredInEnv": "Source: environment configuration",
-    "admin.accountNothingToChange": "Provide a new email or a new password.",
+    "admin.accountNothingToChange": "Provide a new email or a new password.", // NOSONAR S2068 - i18n UI label, not a secret
     "admin.addDepartment": "Add department",
     "admin.addJobTitle": "Add job title",
     "admin.labelFr": "Label (French)",
@@ -272,13 +268,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     "login.employeePortalDesc": "Access your digital business card and share it securely across all your channels.",
     "login.welcomeBack": "Welcome",
     "login.hint": "Enter your corporate email to access your digital business card.",
-    "login.hintAdminStep": "Administrator account: enter your password to manage cards.",
-    "login.adminPasswordRequired": "Administrator password is required for this email.",
+    "login.hintAdminStep": "Administrator account: enter your password to manage cards.", // NOSONAR S2068 - i18n UI label, not a secret
+    "login.adminPasswordRequired": "Administrator password is required for this email.", // NOSONAR S2068 - i18n UI label, not a secret
     "login.emailLabel": "Corporate email",
     "login.emailPlaceholder": "e.g. name@afrilandfirstbank.com",
-    "login.adminSecretLabel": "Administrator password",
-    "login.adminSecretPlaceholder": "Password",
-    "login.adminSecretHint": "For admin sign-in only. Never share this password.",
+    "login.adminSecretLabel": "Administrator password", // NOSONAR S2068 - i18n UI label, not a secret
+    "login.adminSecretPlaceholder": "Password", // NOSONAR S2068 - i18n UI label, not a secret
+    "login.adminSecretHint": "For admin sign-in only. Never share this password.", // NOSONAR S2068 - i18n UI label, not a secret
     "login.authFailed": "Invalid admin authentication.",
     "login.submitButton": "View My Card",
     "login.footer": "Secure access for authorized personnel only. © {year} Afriland First Bank Group.",

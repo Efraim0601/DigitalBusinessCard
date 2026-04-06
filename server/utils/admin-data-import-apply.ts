@@ -18,14 +18,11 @@ import {
 import { invalidateAllLabelListCaches } from "./label-list-cache";
 import type { PoolClient } from "pg";
 
-/** Tables normalisées `label_fr` / `label_en` (identifiants SQL figés, pas d’entrée utilisateur). */
-type LabelPairTable = "departments" | "job_titles";
-
-async function resolveLabelEntityByName(client: PoolClient, table: LabelPairTable, label: string): Promise<string | null> {
+async function resolveDepartmentId(client: PoolClient, label: string): Promise<string | null> {
   const t = label.trim();
   if (!t) return null;
   const { rows } = await client.query<{ id: string }>(
-    `SELECT id FROM ${table}
+    `SELECT id FROM departments
      WHERE lower(trim(label_fr)) = lower(trim($1)) OR lower(trim(label_en)) = lower(trim($1))
      LIMIT 1`,
     [t]
@@ -33,27 +30,33 @@ async function resolveLabelEntityByName(client: PoolClient, table: LabelPairTabl
   return rows[0]?.id ?? null;
 }
 
-async function upsertLabelPairRow(
-  client: PoolClient,
-  table: LabelPairTable,
-  emptyPairMessage: string,
-  fr: string,
-  en: string
-) {
+async function resolveJobTitleId(client: PoolClient, label: string): Promise<string | null> {
+  const t = label.trim();
+  if (!t) return null;
+  const { rows } = await client.query<{ id: string }>(
+    `SELECT id FROM job_titles
+     WHERE lower(trim(label_fr)) = lower(trim($1)) OR lower(trim(label_en)) = lower(trim($1))
+     LIMIT 1`,
+    [t]
+  );
+  return rows[0]?.id ?? null;
+}
+
+async function upsertDepartmentPair(client: PoolClient, fr: string, en: string) {
   const a = sanitizeCell(fr, MAX_LABEL_LENGTH);
   const b = sanitizeCell(en, MAX_LABEL_LENGTH);
   if (!a || !b) {
     throw createError({
       statusCode: 400,
-      data: { error: emptyPairMessage },
+      data: { error: "Chaque direction doit avoir label_fr et label_en (non vides)." },
     });
   }
   const byFr = await client.query<{ id: string }>(
-    `SELECT id FROM ${table} WHERE lower(trim(label_fr)) = lower(trim($1)) LIMIT 1`,
+    `SELECT id FROM departments WHERE lower(trim(label_fr)) = lower(trim($1)) LIMIT 1`,
     [a]
   );
   if (byFr.rows[0]) {
-    await client.query(`UPDATE ${table} SET label_fr = $2, label_en = $3 WHERE id = $1::uuid`, [
+    await client.query(`UPDATE departments SET label_fr = $2, label_en = $3 WHERE id = $1::uuid`, [
       byFr.rows[0].id,
       a,
       b,
@@ -61,18 +64,58 @@ async function upsertLabelPairRow(
     return;
   }
   const byEn = await client.query<{ id: string }>(
-    `SELECT id FROM ${table} WHERE lower(trim(label_en)) = lower(trim($1)) LIMIT 1`,
+    `SELECT id FROM departments WHERE lower(trim(label_en)) = lower(trim($1)) LIMIT 1`,
     [b]
   );
   if (byEn.rows[0]) {
-    await client.query(`UPDATE ${table} SET label_fr = $2, label_en = $3 WHERE id = $1::uuid`, [
+    await client.query(`UPDATE departments SET label_fr = $2, label_en = $3 WHERE id = $1::uuid`, [
       byEn.rows[0].id,
       a,
       b,
     ]);
     return;
   }
-  await client.query(`INSERT INTO ${table} (id, label_fr, label_en) VALUES ($1::uuid, $2, $3)`, [
+  await client.query(`INSERT INTO departments (id, label_fr, label_en) VALUES ($1::uuid, $2, $3)`, [
+    randomUUID(),
+    a,
+    b,
+  ]);
+}
+
+async function upsertJobTitlePair(client: PoolClient, fr: string, en: string) {
+  const a = sanitizeCell(fr, MAX_LABEL_LENGTH);
+  const b = sanitizeCell(en, MAX_LABEL_LENGTH);
+  if (!a || !b) {
+    throw createError({
+      statusCode: 400,
+      data: { error: "Chaque titre doit avoir label_fr et label_en (non vides)." },
+    });
+  }
+  const byFr = await client.query<{ id: string }>(
+    `SELECT id FROM job_titles WHERE lower(trim(label_fr)) = lower(trim($1)) LIMIT 1`,
+    [a]
+  );
+  if (byFr.rows[0]) {
+    await client.query(`UPDATE job_titles SET label_fr = $2, label_en = $3 WHERE id = $1::uuid`, [
+      byFr.rows[0].id,
+      a,
+      b,
+    ]);
+    return;
+  }
+  const byEn = await client.query<{ id: string }>(
+    `SELECT id FROM job_titles WHERE lower(trim(label_en)) = lower(trim($1)) LIMIT 1`,
+    [b]
+  );
+  if (byEn.rows[0]) {
+    await client.query(`UPDATE job_titles SET label_fr = $2, label_en = $3 WHERE id = $1::uuid`, [
+      byEn.rows[0].id,
+      a,
+      b,
+    ]);
+    return;
+  }
+  await client.query(`INSERT INTO job_titles (id, label_fr, label_en) VALUES ($1::uuid, $2, $3)`, [
     randomUUID(),
     a,
     b,
@@ -96,13 +139,7 @@ async function applyScopedTx(
       });
     }
     for (const p of parsed.departments) {
-      await upsertLabelPairRow(
-        client,
-        "departments",
-        "Chaque direction doit avoir label_fr et label_en (non vides).",
-        p.label_fr,
-        p.label_en
-      );
+      await upsertDepartmentPair(client, p.label_fr, p.label_en);
     }
     return { departments: parsed.departments.length, job_titles: 0, cards: 0, warnings };
   }
@@ -115,13 +152,7 @@ async function applyScopedTx(
       });
     }
     for (const p of parsed.job_titles) {
-      await upsertLabelPairRow(
-        client,
-        "job_titles",
-        "Chaque titre doit avoir label_fr et label_en (non vides).",
-        p.label_fr,
-        p.label_en
-      );
+      await upsertJobTitlePair(client, p.label_fr, p.label_en);
     }
     return { departments: 0, job_titles: parsed.job_titles.length, cards: 0, warnings };
   }
@@ -157,7 +188,7 @@ async function applyScopedTx(
 
     let department_id: string | null = null;
     if (directionLabel) {
-      department_id = await resolveLabelEntityByName(client, "departments", directionLabel);
+      department_id = await resolveDepartmentId(client, directionLabel);
       if (!department_id) {
         pushWarn(`Direction non reconnue pour ${email} : « ${directionLabel} » (ignorée).`);
       }
@@ -165,7 +196,7 @@ async function applyScopedTx(
 
     let job_title_id: string | null = null;
     if (posteLabel) {
-      job_title_id = await resolveLabelEntityByName(client, "job_titles", posteLabel);
+      job_title_id = await resolveJobTitleId(client, posteLabel);
       if (!job_title_id) {
         pushWarn(`Poste non reconnu pour ${email} : « ${posteLabel} » (ignoré comme lien titre).`);
       }
@@ -272,7 +303,13 @@ export async function applyAdminDataImport(): Promise<never> {
   });
 }
 
-/** Réservé aux tests unitaires (résolution de libellés, branches défensives). */
-export const __adminImportApplyTest = {
-  resolveLabelEntityByName,
+/**
+ * Résolveurs / upserts pour tests unitaires uniquement (non utilisé par l’API).
+ * Référence les mêmes fonctions que l’import afin d’exercer les branches difficiles à atteindre via applyScopedImport seul.
+ */
+export const __adminImportApplyTestHooks = {
+  resolveDepartmentId,
+  resolveJobTitleId,
+  upsertDepartmentPair,
+  upsertJobTitlePair,
 } as const;

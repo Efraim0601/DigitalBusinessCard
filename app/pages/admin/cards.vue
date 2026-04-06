@@ -34,106 +34,19 @@ const selectedCardIds = ref<string[]>([]);
 const selectedDepartmentIds = ref<string[]>([]);
 const selectedJobTitleIds = ref<string[]>([]);
 
-type AdminDataScope = "cards" | "departments" | "job_titles";
+type AdminImportScope = "cards" | "departments" | "job_titles";
 const importCardsInput = ref<HTMLInputElement | null>(null);
 const importDepartmentsInput = ref<HTMLInputElement | null>(null);
 const importJobTitlesInput = ref<HTMLInputElement | null>(null);
-const cardsXferMsg = ref<string | null>(null);
-const cardsXferErr = ref<string | null>(null);
-const cardsXferWarn = ref<string[]>([]);
-const deptXferMsg = ref<string | null>(null);
-const deptXferErr = ref<string | null>(null);
-const deptXferWarn = ref<string[]>([]);
-const jobXferMsg = ref<string | null>(null);
-const jobXferErr = ref<string | null>(null);
-const jobXferWarn = ref<string[]>([]);
-
-function resetXfer(scope: AdminDataScope) {
-  if (scope === "cards") {
-    cardsXferMsg.value = null;
-    cardsXferErr.value = null;
-    cardsXferWarn.value = [];
-  } else if (scope === "departments") {
-    deptXferMsg.value = null;
-    deptXferErr.value = null;
-    deptXferWarn.value = [];
-  } else {
-    jobXferMsg.value = null;
-    jobXferErr.value = null;
-    jobXferWarn.value = [];
-  }
-}
-
-const SCOPED_DOWNLOAD: Record<AdminDataScope, string> = {
-  cards: "cartes.csv",
-  departments: "directions.csv",
-  job_titles: "titres-postes.csv",
-};
-
-async function exportScopedCsv(scope: AdminDataScope) {
-  resetXfer(scope);
-  try {
-    const buf = await $fetch<ArrayBuffer>("/api/admin/data-export", {
-      query: { scope },
-      responseType: "arrayBuffer",
-    });
-    if (globalThis.window === undefined) return;
-    const blob = new Blob([buf], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = SCOPED_DOWNLOAD[scope];
-    a.click();
-    URL.revokeObjectURL(url);
-    if (scope === "cards") cardsXferMsg.value = t("admin.exportCsvSuccess");
-    else if (scope === "departments") deptXferMsg.value = t("admin.exportCsvSuccess");
-    else jobXferMsg.value = t("admin.exportCsvSuccess");
-  } catch (e) {
-    console.error(e);
-    const err = t("admin.exportError");
-    if (scope === "cards") cardsXferErr.value = err;
-    else if (scope === "departments") deptXferErr.value = err;
-    else jobXferErr.value = err;
-  }
-}
-
-async function onScopedImportChange(ev: Event, scope: AdminDataScope) {
-  const input = ev.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = "";
-  if (!file) return;
-  resetXfer(scope);
-  try {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await $fetch<{
-      success: boolean;
-      imported: { departments: number; job_titles: number; cards: number };
-      warnings: string[];
-    }>("/api/admin/data-import", { method: "POST", query: { scope }, body: fd });
-    const warn = res.warnings ?? [];
-    if (scope === "cards") {
-      cardsXferMsg.value = t("admin.importSuccessCards", { n: String(res.imported.cards) });
-      cardsXferWarn.value = warn;
-    } else if (scope === "departments") {
-      deptXferMsg.value = t("admin.importSuccessDepartments", { n: String(res.imported.departments) });
-      deptXferWarn.value = warn;
-    } else {
-      jobXferMsg.value = t("admin.importSuccessJobTitles", { n: String(res.imported.job_titles) });
-      jobXferWarn.value = warn;
-    }
-    selectedCardIds.value = [];
-    selectedDepartmentIds.value = [];
-    selectedJobTitleIds.value = [];
-    await Promise.all([loadCards(), loadDepartments(), loadJobTitles()]);
-  } catch (e) {
-    console.error(e);
-    const msg = (e as { data?: { error?: string } })?.data?.error ?? t("admin.importError");
-    if (scope === "cards") cardsXferErr.value = msg;
-    else if (scope === "departments") deptXferErr.value = msg;
-    else jobXferErr.value = msg;
-  }
-}
+const cardsTransferMessage = ref<string | null>(null);
+const cardsTransferError = ref<string | null>(null);
+const cardsTransferWarnings = ref<string[]>([]);
+const departmentsTransferMessage = ref<string | null>(null);
+const departmentsTransferError = ref<string | null>(null);
+const departmentsTransferWarnings = ref<string[]>([]);
+const jobTitlesTransferMessage = ref<string | null>(null);
+const jobTitlesTransferError = ref<string | null>(null);
+const jobTitlesTransferWarnings = ref<string[]>([]);
 
 function formatGroupedNumber(value: string | null | undefined): string {
   const digits = (value ?? "").replaceAll(/\D+/g, "");
@@ -427,6 +340,97 @@ async function bulkDeleteSelectedJobTitles() {
   }
 }
 
+function resetTransfers(scope: AdminImportScope) {
+  if (scope === "cards") {
+    cardsTransferMessage.value = null;
+    cardsTransferError.value = null;
+    cardsTransferWarnings.value = [];
+  } else if (scope === "departments") {
+    departmentsTransferMessage.value = null;
+    departmentsTransferError.value = null;
+    departmentsTransferWarnings.value = [];
+  } else {
+    jobTitlesTransferMessage.value = null;
+    jobTitlesTransferError.value = null;
+    jobTitlesTransferWarnings.value = [];
+  }
+}
+
+const SCOPED_DOWNLOAD: Record<AdminImportScope, string> = {
+  cards: "cartes.csv",
+  departments: "directions.csv",
+  job_titles: "titres-postes.csv",
+};
+
+async function exportScopedCsv(scope: AdminImportScope) {
+  resetTransfers(scope);
+  try {
+    const buf = await $fetch<ArrayBuffer>("/api/admin/data-export", {
+      query: { scope },
+      responseType: "arrayBuffer",
+    });
+    if (!import.meta.client) return;
+    const blob = new Blob([buf], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = SCOPED_DOWNLOAD[scope];
+    a.click();
+    URL.revokeObjectURL(url);
+    if (scope === "cards") cardsTransferMessage.value = t("admin.exportCsvSuccess");
+    else if (scope === "departments") departmentsTransferMessage.value = t("admin.exportCsvSuccess");
+    else jobTitlesTransferMessage.value = t("admin.exportCsvSuccess");
+  } catch (e) {
+    console.error(e);
+    if (scope === "cards") cardsTransferError.value = t("admin.exportError");
+    else if (scope === "departments") departmentsTransferError.value = t("admin.exportError");
+    else jobTitlesTransferError.value = t("admin.exportError");
+  }
+}
+
+async function onScopedImportFileChange(ev: Event, scope: AdminImportScope) {
+  const input = ev.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+  resetTransfers(scope);
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await $fetch<{
+      success: boolean;
+      imported: { departments: number; job_titles: number; cards: number };
+      warnings?: string[];
+    }>("/api/admin/data-import", { method: "POST", query: { scope }, body: fd });
+    const w = res.warnings?.length ? [...res.warnings] : [];
+    if (scope === "cards") {
+      cardsTransferMessage.value = t("admin.importSuccessCards", { n: String(res.imported.cards) });
+      cardsTransferWarnings.value = w;
+    } else if (scope === "departments") {
+      departmentsTransferMessage.value = t("admin.importSuccessDepartments", {
+        n: String(res.imported.departments),
+      });
+      departmentsTransferWarnings.value = w;
+    } else {
+      jobTitlesTransferMessage.value = t("admin.importSuccessJobTitles", { n: String(res.imported.job_titles) });
+      jobTitlesTransferWarnings.value = w;
+    }
+    selectedCardIds.value = [];
+    selectedDepartmentIds.value = [];
+    selectedJobTitleIds.value = [];
+    await Promise.all([loadCards(), loadDepartments(), loadJobTitles()]);
+  } catch (e) {
+    console.error(e);
+    const msg =
+      (e as { data?: { error?: string } })?.data?.error ??
+      (e as { message?: string })?.message ??
+      t("admin.importError");
+    if (scope === "cards") cardsTransferError.value = msg;
+    else if (scope === "departments") departmentsTransferError.value = msg;
+    else jobTitlesTransferError.value = msg;
+  }
+}
+
 function cardDepartmentLabel(card: any) {
   if (card.department?.label_fr != null || card.department?.label_en != null) {
     return locale === "en" ? card.department.label_en : card.department.label_fr;
@@ -694,7 +698,16 @@ watch(activeTab, (tab) => {
 
     <!-- Onglet Cartes -->
     <template v-if="activeTab === 'cards'">
-      <div class="mb-4 flex flex-col gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40 p-3">
+      <input
+        ref="importCardsInput"
+        type="file"
+        accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+        class="hidden"
+        @change="onScopedImportFileChange($event, 'cards')"
+      >
+      <div
+        class="mb-4 flex flex-col gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40 p-4"
+      >
         <p class="text-xs text-zinc-600 dark:text-zinc-400">
           {{ t("admin.dataTransferHintCards") }}
         </p>
@@ -706,21 +719,22 @@ watch(activeTab, (tab) => {
             {{ t("admin.importCsv") }}
           </UButton>
         </div>
-        <input
-          ref="importCardsInput"
-          type="file"
-          accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          class="hidden"
-          @change="onScopedImportChange($event, 'cards')"
-        >
-        <p v-if="cardsXferMsg" class="text-xs text-green-600 dark:text-green-400">{{ cardsXferMsg }}</p>
-        <template v-if="cardsXferWarn.length">
-          <p class="text-xs font-medium text-amber-700 dark:text-amber-400 mt-1">{{ t("admin.importWarningsTitle") }}</p>
-          <ul class="text-xs text-amber-700 dark:text-amber-400 space-y-0.5 list-disc pl-4">
-            <li v-for="(w, i) in cardsXferWarn" :key="i">{{ w }}</li>
+        <p v-if="cardsTransferMessage" class="text-xs text-green-600 dark:text-green-400">
+          {{ cardsTransferMessage }}
+        </p>
+        <p v-if="cardsTransferError" class="text-xs text-red-500">
+          {{ cardsTransferError }}
+        </p>
+        <template v-if="cardsTransferWarnings.length">
+          <p class="text-xs font-medium text-amber-700 dark:text-amber-300">
+            {{ t("admin.importWarningsTitle") }}
+          </p>
+          <ul class="text-xs text-amber-800 dark:text-amber-200 list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto">
+            <li v-for="(w, i) in cardsTransferWarnings" :key="i">
+              {{ w }}
+            </li>
           </ul>
         </template>
-        <p v-if="cardsXferErr" class="text-xs text-red-500">{{ cardsXferErr }}</p>
       </div>
       <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div class="flex flex-wrap items-center gap-3">
@@ -939,33 +953,55 @@ watch(activeTab, (tab) => {
 
     <!-- Onglet Directions -->
     <template v-else-if="activeTab === 'departments'">
-      <div class="mb-4 flex flex-col gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40 p-3">
+      <input
+        ref="importDepartmentsInput"
+        type="file"
+        accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+        class="hidden"
+        @change="onScopedImportFileChange($event, 'departments')"
+      >
+      <div
+        class="mb-4 flex flex-col gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40 p-4"
+      >
         <p class="text-xs text-zinc-600 dark:text-zinc-400">
           {{ t("admin.dataTransferHintDepartments") }}
         </p>
         <div class="flex flex-wrap items-center gap-2">
-          <UButton type="button" variant="outline" size="sm" icon="i-lucide-download" @click="exportScopedCsv('departments')">
+          <UButton
+            type="button"
+            variant="outline"
+            size="sm"
+            icon="i-lucide-download"
+            @click="exportScopedCsv('departments')"
+          >
             {{ t("admin.exportCsv") }}
           </UButton>
-          <UButton type="button" variant="outline" size="sm" icon="i-lucide-upload" @click="importDepartmentsInput?.click()">
+          <UButton
+            type="button"
+            variant="outline"
+            size="sm"
+            icon="i-lucide-upload"
+            @click="importDepartmentsInput?.click()"
+          >
             {{ t("admin.importCsv") }}
           </UButton>
         </div>
-        <input
-          ref="importDepartmentsInput"
-          type="file"
-          accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          class="hidden"
-          @change="onScopedImportChange($event, 'departments')"
-        >
-        <p v-if="deptXferMsg" class="text-xs text-green-600 dark:text-green-400">{{ deptXferMsg }}</p>
-        <template v-if="deptXferWarn.length">
-          <p class="text-xs font-medium text-amber-700 dark:text-amber-400 mt-1">{{ t("admin.importWarningsTitle") }}</p>
-          <ul class="text-xs text-amber-700 dark:text-amber-400 space-y-0.5 list-disc pl-4">
-            <li v-for="(w, i) in deptXferWarn" :key="i">{{ w }}</li>
+        <p v-if="departmentsTransferMessage" class="text-xs text-green-600 dark:text-green-400">
+          {{ departmentsTransferMessage }}
+        </p>
+        <p v-if="departmentsTransferError" class="text-xs text-red-500">
+          {{ departmentsTransferError }}
+        </p>
+        <template v-if="departmentsTransferWarnings.length">
+          <p class="text-xs font-medium text-amber-700 dark:text-amber-300">
+            {{ t("admin.importWarningsTitle") }}
+          </p>
+          <ul class="text-xs text-amber-800 dark:text-amber-200 list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto">
+            <li v-for="(w, i) in departmentsTransferWarnings" :key="i">
+              {{ w }}
+            </li>
           </ul>
         </template>
-        <p v-if="deptXferErr" class="text-xs text-red-500">{{ deptXferErr }}</p>
       </div>
       <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div class="flex flex-wrap items-center gap-2">
@@ -1075,33 +1111,55 @@ watch(activeTab, (tab) => {
 
     <!-- Onglet Titres / Postes -->
     <template v-else-if="activeTab === 'job_titles'">
-      <div class="mb-4 flex flex-col gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40 p-3">
+      <input
+        ref="importJobTitlesInput"
+        type="file"
+        accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+        class="hidden"
+        @change="onScopedImportFileChange($event, 'job_titles')"
+      >
+      <div
+        class="mb-4 flex flex-col gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40 p-4"
+      >
         <p class="text-xs text-zinc-600 dark:text-zinc-400">
           {{ t("admin.dataTransferHintJobTitles") }}
         </p>
         <div class="flex flex-wrap items-center gap-2">
-          <UButton type="button" variant="outline" size="sm" icon="i-lucide-download" @click="exportScopedCsv('job_titles')">
+          <UButton
+            type="button"
+            variant="outline"
+            size="sm"
+            icon="i-lucide-download"
+            @click="exportScopedCsv('job_titles')"
+          >
             {{ t("admin.exportCsv") }}
           </UButton>
-          <UButton type="button" variant="outline" size="sm" icon="i-lucide-upload" @click="importJobTitlesInput?.click()">
+          <UButton
+            type="button"
+            variant="outline"
+            size="sm"
+            icon="i-lucide-upload"
+            @click="importJobTitlesInput?.click()"
+          >
             {{ t("admin.importCsv") }}
           </UButton>
         </div>
-        <input
-          ref="importJobTitlesInput"
-          type="file"
-          accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          class="hidden"
-          @change="onScopedImportChange($event, 'job_titles')"
-        >
-        <p v-if="jobXferMsg" class="text-xs text-green-600 dark:text-green-400">{{ jobXferMsg }}</p>
-        <template v-if="jobXferWarn.length">
-          <p class="text-xs font-medium text-amber-700 dark:text-amber-400 mt-1">{{ t("admin.importWarningsTitle") }}</p>
-          <ul class="text-xs text-amber-700 dark:text-amber-400 space-y-0.5 list-disc pl-4">
-            <li v-for="(w, i) in jobXferWarn" :key="i">{{ w }}</li>
+        <p v-if="jobTitlesTransferMessage" class="text-xs text-green-600 dark:text-green-400">
+          {{ jobTitlesTransferMessage }}
+        </p>
+        <p v-if="jobTitlesTransferError" class="text-xs text-red-500">
+          {{ jobTitlesTransferError }}
+        </p>
+        <template v-if="jobTitlesTransferWarnings.length">
+          <p class="text-xs font-medium text-amber-700 dark:text-amber-300">
+            {{ t("admin.importWarningsTitle") }}
+          </p>
+          <ul class="text-xs text-amber-800 dark:text-amber-200 list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto">
+            <li v-for="(w, i) in jobTitlesTransferWarnings" :key="i">
+              {{ w }}
+            </li>
           </ul>
         </template>
-        <p v-if="jobXferErr" class="text-xs text-red-500">{{ jobXferErr }}</p>
       </div>
       <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div class="flex flex-wrap items-center gap-2">

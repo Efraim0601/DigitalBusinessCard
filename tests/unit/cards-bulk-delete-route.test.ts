@@ -37,6 +37,37 @@ describe("POST /api/cards/bulk-delete", () => {
     expect(ev.node.res.statusCode).toBe(400);
   });
 
+  it("400 si aucun UUID valide après filtrage", async () => {
+    const ev = testH3Event(
+      new Request("http://localhost/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ["bad"] }),
+      })
+    );
+    const res = await bulkDeleteHandler(ev);
+    expect(res).toMatchObject({ error: expect.stringContaining("UUIDs") });
+    expect(ev.node.res.statusCode).toBe(400);
+  });
+
+  it("400 si plus de 500 ids", async () => {
+    const many = Array.from({ length: 501 }, (_, i) => {
+      const tail = i.toString(16).padStart(12, "0");
+      return `550e8400-e29b-41d4-a716-${tail}`;
+    });
+    const ev = testH3Event(
+      new Request("http://localhost/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: many }),
+      })
+    );
+    const res = await bulkDeleteHandler(ev);
+    expect(res).toMatchObject({ error: expect.stringContaining("500") });
+    expect(ev.node.res.statusCode).toBe(400);
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+
   it("supprime et retourne deleted", async () => {
     mocks.query.mockResolvedValue({ rows: [{ id: "a" }, { id: "b" }] });
     const ev = testH3Event(
