@@ -1,6 +1,10 @@
 # Build qui échoue avec "apparmor ... /proc/thread-self/attr/apparmor/exec" :
 #   ./scripts/docker-up-build.sh
 # (BuildKit désactivé + voir commentaires dans ce script pour Docker Snap / apparmor.)
+#
+# Accélération : le Dockerfile utilise un cache npm BuildKit (`--mount=type=cache`).
+# Préférez `docker compose build` avec BuildKit activé (Docker 23+ / Compose v2 : souvent par défaut).
+# Sinon : export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
 services:
   db:
     image: postgres:16

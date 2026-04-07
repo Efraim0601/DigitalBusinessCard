@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.4
+# Cache npm entre les builds (nécessite BuildKit : `docker compose build` ou DOCKER_BUILDKIT=1).
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -7,7 +9,8 @@ ENV NUXT_DISABLE_FONTS=1
 ENV NODE_OPTIONS=--max-old-space-size=6144
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 COPY app ./app
 COPY public ./public

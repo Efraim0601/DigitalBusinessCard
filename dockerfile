@@ -15,8 +15,9 @@ ENV NODE_OPTIONS=--max-old-space-size=6144
 # Copy lockfile and manifest explicitly
 COPY package.json package-lock.json ./
 
-# Install dependencies deterministically
-RUN npm ci
+# Install dependencies deterministically (cache npm avec BuildKit)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 # Copy only required source files
 COPY app ./app
@@ -31,7 +32,8 @@ COPY tsconfig.json ./tsconfig.json
 RUN npm run build
 
 # Install server runtime deps (ipx, etc.) so COPY includes them
-RUN cd .output/server && npm ci --omit=dev
+RUN --mount=type=cache,target=/root/.npm \
+    sh -c "cd .output/server && npm ci --omit=dev --no-audit --no-fund"
 
 # Final stage
 FROM node:22-alpine AS runner
