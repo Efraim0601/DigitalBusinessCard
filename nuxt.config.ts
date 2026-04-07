@@ -93,6 +93,12 @@ export default defineNuxtConfig({
   pwa: {
     injectRegister: "auto",
 
+    /**
+     * Coquille HTML pour `/` : sinon le SW Workbox (NavigationRoute → `/`) n’a aucun document
+     * en precache et l’app installée peut ne plus démarrer correctement depuis l’icône.
+     */
+    registerWebManifestInRouteRules: true,
+
     includeAssets: [
       "favicon.ico",
       "apple-touch-icon.png",
@@ -106,6 +112,9 @@ export default defineNuxtConfig({
       name: "vcard",
       short_name: "vcard",
       description: "A simple, URL based, digital card system.",
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
       theme_color: "#000000",
       icons: [
         {
@@ -126,6 +135,20 @@ export default defineNuxtConfig({
         },
       ],
     },
+    workbox: {
+      /**
+       * Sans ça, le SW ne precache presque rien : NavigationRoute est lié à `/` mais aucun
+       * document HTML n’était dans le manifeste → écran vide au lancement depuis l’icône.
+       */
+      globPatterns: [
+        "index.html",
+        "_payload.json",
+        "manifest.webmanifest",
+        "_nuxt/builds/**/*.json",
+        "_nuxt/**/*.js",
+        "_nuxt/**/*.css",
+      ],
+    },
   },
 
   compatibilityDate: "2024-11-27",
@@ -135,6 +158,9 @@ export default defineNuxtConfig({
    * pour laisser le temps d’émettre le 503 applicatif avant fermeture Node.
    */
   nitro: {
+    prerender: {
+      routes: ["/"],
+    },
     hooks: {
       listen(server) {
         const handlerMs = Math.max(500, Number(process.env.NITRO_HANDLER_TIMEOUT_MS || 2000));

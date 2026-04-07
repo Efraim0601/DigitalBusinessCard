@@ -59,7 +59,6 @@ async function go() {
   <div
     class="min-h-screen flex flex-col items-center justify-center bg-white px-4 py-10 sm:py-14 text-zinc-900"
   >
-    <NuxtPwaManifest />
     <div class="w-full max-w-[420px] flex flex-col items-stretch">
       <header class="flex flex-col items-center text-center mb-6">
         <div

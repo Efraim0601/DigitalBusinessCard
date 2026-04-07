@@ -5,12 +5,18 @@ type NuxtConfigShape = {
   fonts?: { families: Array<{ name: string; provider: string }> };
   runtimeConfig: { adminEmail: string };
   routeRules: Record<string, { cors: boolean }>;
+  nitro?: { prerender?: { routes?: string[] } };
   pwa?: {
     injectRegister?: string;
+    registerWebManifestInRouteRules?: boolean;
     includeAssets?: string[];
+    workbox?: { globPatterns?: string[] };
     manifest?: {
       name?: string;
       short_name?: string;
+      start_url?: string;
+      scope?: string;
+      display?: string;
       theme_color?: string;
       icons?: Array<{ src?: string; sizes?: string; type?: string; purpose?: string }>;
     };
@@ -77,10 +83,16 @@ describe("nuxt.config.ts", () => {
     const config = await importNuxtConfig();
     expect(config.modules).toContain("@vite-pwa/nuxt");
     expect(config.pwa?.injectRegister).toBe("auto");
+    expect(config.pwa?.registerWebManifestInRouteRules).toBe(true);
     expect(config.pwa?.includeAssets?.length).toBeGreaterThan(0);
     expect(config.pwa?.manifest?.short_name).toBeTruthy();
+    expect(config.pwa?.manifest?.start_url).toBe("/");
+    expect(config.pwa?.manifest?.scope).toBe("/");
+    expect(config.pwa?.manifest?.display).toBe("standalone");
     expect(config.pwa?.manifest?.icons?.length).toBeGreaterThanOrEqual(2);
     const png192 = config.pwa?.manifest?.icons?.find((i) => i.sizes === "192x192");
     expect(png192?.src).toMatch(/192/);
+    expect(config.pwa?.workbox?.globPatterns).toContain("index.html");
+    expect(config.nitro?.prerender?.routes).toContain("/");
   });
 });

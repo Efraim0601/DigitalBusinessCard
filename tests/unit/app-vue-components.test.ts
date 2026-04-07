@@ -26,6 +26,7 @@ describe("app Vue shells and buttons", () => {
       global: {
         stubs: {
           UApp: { template: "<div class=\"uapp\"><slot /></div>" },
+          NuxtPwaManifest: true,
           NuxtLayout: { template: "<div class=\"layout\"><slot /></div>" },
           NuxtPage: { template: "<div class=\"page\" />" },
         },
