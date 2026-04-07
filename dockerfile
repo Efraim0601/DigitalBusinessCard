@@ -8,6 +8,10 @@ RUN apk add --no-cache python3 make g++
 # Set the working directory inside the container
 WORKDIR /app
 
+# Pas de requêtes Google Fonts au build (réseau Docker souvent limité) + même config que nuxt.config.
+ENV NUXT_DISABLE_FONTS=1
+ENV NODE_OPTIONS=--max-old-space-size=6144
+
 # Copy lockfile and manifest explicitly
 COPY package.json package-lock.json ./
 

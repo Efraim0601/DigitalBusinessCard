@@ -3,6 +3,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 ENV NUXT_DISABLE_FONTS=1
+# Évite les OOM / builds qui semblent figés pendant « vite … transforming » (heap Node par défaut ~512 Mo–2 Go selon l’hôte).
+ENV NODE_OPTIONS=--max-old-space-size=6144
 
 COPY package.json package-lock.json ./
 RUN npm ci
