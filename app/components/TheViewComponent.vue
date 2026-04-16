@@ -90,18 +90,10 @@ const shareTitle = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
   return name ? t("share.cardTitle", { name }) : t("share.cardTitleDefault");
 });
-const shareUrl = computed(() => {
-  if (!hasWindow()) return "";
-  // Lien partagé = page de login, pas la carte directe
-  return `${globalThis.window.location.origin}/`;
-});
+/** URL de partage = lien direct vers la carte (sans paramètres owner/employee). */
+const shareUrl = computed(() => publicUrl.value || (hasWindow() ? globalThis.window.location.href : ""));
 
-/** URL courte pour partage : ici on partage également la page de login. */
-function buildShortShareUrl(): string {
-  if (!hasWindow()) return "";
-  return `${globalThis.window.location.origin}/`;
-}
-const shareUrlShort = computed(() => buildShortShareUrl());
+const shareUrlShort = computed(() => shareUrl.value);
 
 const shareText = computed(() => {
   const name = [urlCard.fName, urlCard.lName].filter(Boolean).join(" ");
