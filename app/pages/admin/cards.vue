@@ -9,9 +9,13 @@ const FIXED_FAX = "222 221 785";
 
 const activeTab = ref<"cards" | "departments" | "job_titles" | "account" | "appearance">("cards");
 type Paged<T> = { items: T[]; total: number; limit: number; offset: number };
+type LabelItem = { id: string; label_fr: string; label_en: string };
 const cards = ref<Paged<any>>({ items: [], total: 0, limit: 20, offset: 0 });
-const departments = ref<Paged<{ id: string; label_fr: string; label_en: string }>>({ items: [], total: 0, limit: 20, offset: 0 });
-const jobTitles = ref<Paged<{ id: string; label_fr: string; label_en: string }>>({ items: [], total: 0, limit: 20, offset: 0 });
+const departments = ref<Paged<LabelItem>>({ items: [], total: 0, limit: 20, offset: 0 });
+const jobTitles = ref<Paged<LabelItem>>({ items: [], total: 0, limit: 20, offset: 0 });
+/** Listes complètes pour les selects du formulaire de carte (indépendantes de la pagination/recherche de l'onglet). */
+const allDepartments = ref<LabelItem[]>([]);
+const allJobTitles = ref<LabelItem[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const editing = ref<any | null>(null);
@@ -138,6 +142,40 @@ async function loadJobTitles() {
   }
 }
 
+async function loadAllLabels(endpoint: "/api/departments" | "/api/job-titles"): Promise<LabelItem[]> {
+  const chunk = 200;
+  const collected: LabelItem[] = [];
+  let offset = 0;
+  // Première page donne aussi le total pour s'arrêter proprement.
+  const first = await $fetch<Paged<LabelItem>>(endpoint, { query: { limit: chunk, offset } });
+  collected.push(...first.items);
+  const total = first.total ?? collected.length;
+  while (collected.length < total && first.items.length === chunk) {
+    offset += chunk;
+    const next = await $fetch<Paged<LabelItem>>(endpoint, { query: { limit: chunk, offset } });
+    if (!next.items.length) break;
+    collected.push(...next.items);
+    if (next.items.length < chunk) break;
+  }
+  return collected;
+}
+
+async function loadAllDepartments() {
+  try {
+    allDepartments.value = await loadAllLabels("/api/departments");
+  } catch (e) {
+    console.error("Load all departments failed:", e);
+  }
+}
+
+async function loadAllJobTitles() {
+  try {
+    allJobTitles.value = await loadAllLabels("/api/job-titles");
+  } catch (e) {
+    console.error("Load all job titles failed:", e);
+  }
+}
+
 function startCreate() {
   editing.value = {
     id: null,
@@ -185,10 +223,22 @@ const departmentSelectValue = computed({
     if (v) editing.value.company = null;
   },
 });
-const departmentOptions = computed(() => [
-  { value: "", label: "— " + t("admin.department") + " —" },
-  ...departments.value.items.map((d) => ({ value: d.id, label: d.label_fr })),
-]);
+const departmentOptions = computed(() => {
+  const items = [...allDepartments.value];
+  const currentId = editing.value?.department_id ?? null;
+  if (currentId && !items.some((d) => d.id === currentId)) {
+    const fallback = editing.value?.department;
+    items.unshift({
+      id: currentId,
+      label_fr: fallback?.label_fr ?? currentId,
+      label_en: fallback?.label_en ?? currentId,
+    });
+  }
+  return [
+    { value: "", label: "— " + t("admin.department") + " —" },
+    ...items.map((d) => ({ value: d.id, label: d.label_fr })),
+  ];
+});
 
 // Select Titre / Poste : id ou "" (liste uniquement)
 const jobTitleSelectValue = computed({
@@ -199,10 +249,22 @@ const jobTitleSelectValue = computed({
     if (v) editing.value.title = null;
   },
 });
-const jobTitleOptions = computed(() => [
-  { value: "", label: "— " + t("admin.titleField") + " —" },
-  ...jobTitles.value.items.map((j) => ({ value: j.id, label: j.label_fr })),
-]);
+const jobTitleOptions = computed(() => {
+  const items = [...allJobTitles.value];
+  const currentId = editing.value?.job_title_id ?? null;
+  if (currentId && !items.some((j) => j.id === currentId)) {
+    const fallback = editing.value?.job_title;
+    items.unshift({
+      id: currentId,
+      label_fr: fallback?.label_fr ?? currentId,
+      label_en: fallback?.label_en ?? currentId,
+    });
+  }
+  return [
+    { value: "", label: "— " + t("admin.titleField") + " —" },
+    ...items.map((j) => ({ value: j.id, label: j.label_fr })),
+  ];
+});
 
 async function saveCard() {
   if (!editing.value) return;
@@ -308,6 +370,7 @@ async function bulkDeleteSelectedDepartments() {
     await $fetch("/api/departments/bulk-delete", { method: "POST", body: { ids } });
     selectedDepartmentIds.value = [];
     await loadDepartments();
+    await loadAllDepartments();
     await loadCards();
   } catch (e) {
     console.error(e);
@@ -343,6 +406,7 @@ async function bulkDeleteSelectedJobTitles() {
     await $fetch("/api/job-titles/bulk-delete", { method: "POST", body: { ids } });
     selectedJobTitleIds.value = [];
     await loadJobTitles();
+    await loadAllJobTitles();
     await loadCards();
   } catch (e) {
     console.error(e);
@@ -427,7 +491,13 @@ async function onScopedImportFileChange(ev: Event, scope: AdminImportScope) {
     selectedCardIds.value = [];
     selectedDepartmentIds.value = [];
     selectedJobTitleIds.value = [];
-    await Promise.all([loadCards(), loadDepartments(), loadJobTitles()]);
+    await Promise.all([
+      loadCards(),
+      loadDepartments(),
+      loadJobTitles(),
+      loadAllDepartments(),
+      loadAllJobTitles(),
+    ]);
   } catch (e) {
     console.error(e);
     const msg =
@@ -485,6 +555,7 @@ async function saveDepartment() {
     }
     departmentForm.value = null;
     await loadDepartments();
+    await loadAllDepartments();
   } catch (e) {
     departmentSaveError.value = (e as any)?.data?.error || (e as Error)?.message || t("admin.loadError");
     console.error(e);
@@ -497,6 +568,7 @@ async function removeDepartment(d: { id: string }) {
     await $fetch(`/api/departments/${d.id}`, { method: "DELETE" });
     selectedDepartmentIds.value = selectedDepartmentIds.value.filter((id) => id !== d.id);
     await loadDepartments();
+    await loadAllDepartments();
     await loadCards();
   } catch (e) {
     console.error(e);
@@ -534,6 +606,7 @@ async function saveJobTitle() {
     }
     jobTitleForm.value = null;
     await loadJobTitles();
+    await loadAllJobTitles();
   } catch (e) {
     jobTitleSaveError.value = (e as any)?.data?.error || (e as Error)?.message || t("admin.loadError");
     console.error(e);
@@ -546,6 +619,7 @@ async function removeJobTitle(j: { id: string }) {
     await $fetch(`/api/job-titles/${j.id}`, { method: "DELETE" });
     selectedJobTitleIds.value = selectedJobTitleIds.value.filter((id) => id !== j.id);
     await loadJobTitles();
+    await loadAllJobTitles();
     await loadCards();
   } catch (e) {
     console.error(e);
@@ -556,6 +630,8 @@ onMounted(() => {
   loadCards();
   loadDepartments();
   loadJobTitles();
+  loadAllDepartments();
+  loadAllJobTitles();
 });
 
 const debouncedReloadCards = debounce(() => {
