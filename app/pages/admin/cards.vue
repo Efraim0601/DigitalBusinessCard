@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { CARD_TEMPLATES, type TemplateId } from "~~/types/template";
+
 definePageMeta({ middleware: "admin-auth" });
 
 const { t, locale } = useAppLocale();
 const FIXED_PHONE = "222 233 068";
 const FIXED_FAX = "222 221 785";
 
-const activeTab = ref<"cards" | "departments" | "job_titles" | "account">("cards");
+const activeTab = ref<"cards" | "departments" | "job_titles" | "account" | "appearance">("cards");
 type Paged<T> = { items: T[]; total: number; limit: number; offset: number };
 const cards = ref<Paged<any>>({ items: [], total: 0, limit: 20, offset: 0 });
 const departments = ref<Paged<{ id: string; label_fr: string; label_en: string }>>({ items: [], total: 0, limit: 20, offset: 0 });
@@ -29,6 +31,13 @@ const adminCredNewPassword = ref("");
 const adminCredLoading = ref(false);
 const adminCredMessage = ref<string | null>(null);
 const adminCredError = ref<string | null>(null);
+
+const appearanceAllowUser = ref(false);
+const appearanceDefaultTemplate = ref<TemplateId>("classic");
+const appearanceLoading = ref(false);
+const appearanceSaving = ref(false);
+const appearanceMessage = ref<string | null>(null);
+const appearanceError = ref<string | null>(null);
 
 const selectedCardIds = ref<string[]>([]);
 const selectedDepartmentIds = ref<string[]>([]);
@@ -643,7 +652,49 @@ async function saveAdminCredentials() {
 
 watch(activeTab, (tab) => {
   if (tab === "account") void loadAdminCredentials();
+  if (tab === "appearance") void loadAppearanceSettings();
 });
+
+async function loadAppearanceSettings() {
+  appearanceError.value = null;
+  appearanceLoading.value = true;
+  try {
+    const res = await $fetch<{ allowUserTemplate: boolean; defaultTemplate: TemplateId }>(
+      "/api/settings"
+    );
+    appearanceAllowUser.value = res.allowUserTemplate;
+    appearanceDefaultTemplate.value = res.defaultTemplate;
+  } catch (e) {
+    appearanceError.value = (e as any)?.data?.error || t("admin.appearanceLoadError");
+  } finally {
+    appearanceLoading.value = false;
+  }
+}
+
+async function saveAppearanceSettings() {
+  appearanceMessage.value = null;
+  appearanceError.value = null;
+  appearanceSaving.value = true;
+  try {
+    const res = await $fetch<{ allowUserTemplate: boolean; defaultTemplate: TemplateId }>(
+      "/api/admin/settings",
+      {
+        method: "PUT",
+        body: {
+          allowUserTemplate: appearanceAllowUser.value,
+          defaultTemplate: appearanceDefaultTemplate.value,
+        },
+      }
+    );
+    appearanceAllowUser.value = res.allowUserTemplate;
+    appearanceDefaultTemplate.value = res.defaultTemplate;
+    appearanceMessage.value = t("admin.appearanceSaved");
+  } catch (e) {
+    appearanceError.value = (e as any)?.data?.error || t("admin.appearanceSaveError");
+  } finally {
+    appearanceSaving.value = false;
+  }
+}
 </script>
 
 <template>
@@ -685,6 +736,14 @@ watch(activeTab, (tab) => {
         @click="activeTab = 'job_titles'"
       >
         {{ t("admin.tabJobTitles") }}
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+        :class="activeTab === 'appearance' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'"
+        @click="activeTab = 'appearance'"
+      >
+        {{ t("admin.tabAppearance") }}
       </button>
       <button
         type="button"
@@ -1264,6 +1323,71 @@ watch(activeTab, (tab) => {
             {{ t("admin.next") }}
           </UButton>
         </div>
+      </div>
+    </template>
+
+    <!-- Onglet Apparence -->
+    <template v-else-if="activeTab === 'appearance'">
+      <div class="max-w-3xl space-y-5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        <div>
+          <h2 class="text-lg font-semibold">{{ t("admin.appearanceTitle") }}</h2>
+          <p class="mt-1 text-xs text-zinc-500">{{ t("admin.appearanceHelp") }}</p>
+        </div>
+
+        <p v-if="appearanceLoading" class="text-sm text-zinc-500">{{ t("admin.loading") }}</p>
+        <template v-else>
+          <label class="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              v-model="appearanceAllowUser"
+              type="checkbox"
+              class="mt-1 h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+            >
+            <span>
+              <span class="block text-sm font-medium">{{ t("admin.appearanceAllowUser") }}</span>
+              <span class="block text-xs text-zinc-500 dark:text-zinc-400">{{ t("admin.appearanceAllowUserHelp") }}</span>
+            </span>
+          </label>
+
+          <div>
+            <p class="text-sm font-medium mb-2">{{ t("admin.appearanceDefaultTemplate") }}</p>
+            <p class="text-xs text-zinc-500 mb-3">{{ t("admin.appearanceDefaultTemplateHelp") }}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                v-for="tpl in CARD_TEMPLATES"
+                :key="tpl.id"
+                type="button"
+                class="group relative rounded-xl overflow-hidden border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :class="appearanceDefaultTemplate === tpl.id ? 'border-primary-500 shadow-md' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'"
+                :aria-pressed="appearanceDefaultTemplate === tpl.id"
+                @click="appearanceDefaultTemplate = tpl.id"
+              >
+                <img
+                  :src="tpl.background"
+                  :alt="t(tpl.labelKey)"
+                  class="w-full h-32 object-cover"
+                  loading="lazy"
+                >
+                <span class="block px-3 py-2 text-sm font-medium bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200">
+                  {{ t(tpl.labelKey) }}
+                </span>
+                <span
+                  v-if="appearanceDefaultTemplate === tpl.id"
+                  class="absolute top-2 right-2 rounded-full bg-primary-500 text-white w-6 h-6 flex items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <UIcon name="i-lucide-check" class="w-4 h-4" />
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <p v-if="appearanceMessage" class="text-sm text-green-600 dark:text-green-400">{{ appearanceMessage }}</p>
+          <p v-if="appearanceError" class="text-sm text-red-500">{{ appearanceError }}</p>
+
+          <UButton color="primary" :loading="appearanceSaving" @click="saveAppearanceSettings">
+            {{ t("admin.save") }}
+          </UButton>
+        </template>
       </div>
     </template>
 

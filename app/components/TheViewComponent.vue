@@ -21,9 +21,11 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard, isCreator = false } = defineProps<{
+const { urlCard, isCreator = false, background } = defineProps<{
   urlCard: Card;
   isCreator?: boolean;
+  /** Image de fond explicite (override app.config.company.cardBackground). */
+  background?: string;
 }>();
 
 const { t, locale } = useAppLocale();
@@ -60,9 +62,11 @@ const company = computed(() => appConfig.company ?? {
   website: "www.afrilandfirstbank.com",
 });
 
+const resolvedBackground = computed(() => background || company.value?.cardBackground || "");
+
 useHead(() => ({
-  link: company.value?.cardBackground
-    ? [{ rel: "preload", as: "image", href: company.value.cardBackground }]
+  link: resolvedBackground.value
+    ? [{ rel: "preload", as: "image", href: resolvedBackground.value }]
     : [],
 }));
 
@@ -215,7 +219,7 @@ async function downloadCardImage() {
   const el = cardContentRef.value;
   if (!el) return;
   try {
-    await waitForBackgroundImage(company.value?.cardBackground);
+    await waitForBackgroundImage(resolvedBackground.value);
     await nextTick();
     await waitForImages(el);
     const { toPng } = await import("html-to-image");
@@ -251,7 +255,7 @@ async function shareCardImage() {
   const el = cardContentRef.value;
   if (!el) return;
   try {
-    await waitForBackgroundImage(company.value?.cardBackground);
+    await waitForBackgroundImage(resolvedBackground.value);
     await nextTick();
     await waitForImages(el);
     const { toPng } = await import("html-to-image");
@@ -367,7 +371,7 @@ defineExpose({
           class="business-card relative overflow-hidden border-2 border-gray-400 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
           :style="{
             backgroundColor: '#ffffff',
-            backgroundImage: company?.cardBackground ? `url(${company.cardBackground})` : undefined,
+            backgroundImage: resolvedBackground ? `url(${resolvedBackground})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }"

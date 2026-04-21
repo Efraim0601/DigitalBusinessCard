@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
       setResponseStatus(event, 404);
       return { error: "Card not found" };
     }
-    return { ...mapRowToCard(rows[0]), department_id: null, job_title_id: null, department: null, job_title: null };
+    return { ...mapRowToCard(rows[0]), department_id: null, job_title_id: null, template_id: null, department: null, job_title: null };
   }
 
   requireAdmin(event);
@@ -94,6 +94,7 @@ export default defineEventHandler(async (event) => {
       ...mapRowToCard(r),
       department_id: null,
       job_title_id: null,
+      template_id: null,
       department: null,
       job_title: null,
     }));

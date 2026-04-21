@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS cards (
   mobile TEXT,
   department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
   job_title_id UUID REFERENCES job_titles(id) ON DELETE SET NULL,
+  template_id TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -36,4 +37,16 @@ CREATE TABLE IF NOT EXISTS admin_login (
   password_hash TEXT NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+INSERT INTO app_settings (key, value)
+VALUES
+  ('allow_user_template', 'false'),
+  ('default_template', 'classic')
+ON CONFLICT (key) DO NOTHING;
 

@@ -1,6 +1,7 @@
 import { query } from "../../utils/db";
 import { FIXED_FAX, FIXED_PHONE, formatGroupedNumber } from "../../utils/contact-constants";
 import { requireAdmin } from "../../utils/admin-auth";
+import { isValidTemplateId } from "../../../types/template";
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
     mobile?: string;
     department_id?: string | null;
     job_title_id?: string | null;
+    template_id?: string | null;
   }>(event);
 
   if (!body.email) {
@@ -22,6 +24,7 @@ export default defineEventHandler(async (event) => {
     return { error: "email is required" };
   }
 
+  const templateId = isValidTemplateId(body.template_id) ? body.template_id : null;
   const paramsFull = [
     body.email,
     body.first_name ?? null,
@@ -33,6 +36,7 @@ export default defineEventHandler(async (event) => {
     formatGroupedNumber(body.mobile) || null,
     body.department_id ?? null,
     body.job_title_id ?? null,
+    templateId,
   ];
   const paramsBasic = [
     body.email,
@@ -48,8 +52,8 @@ export default defineEventHandler(async (event) => {
   try {
     const { rows } = await query(
       `
-      INSERT INTO cards (email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      INSERT INTO cards (email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, template_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       ON CONFLICT (email) DO UPDATE
         SET first_name = EXCLUDED.first_name,
             last_name = EXCLUDED.last_name,
@@ -60,8 +64,9 @@ export default defineEventHandler(async (event) => {
             mobile = EXCLUDED.mobile,
             department_id = EXCLUDED.department_id,
             job_title_id = EXCLUDED.job_title_id,
+            template_id = COALESCE(EXCLUDED.template_id, cards.template_id),
             updated_at = now()
-      RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, created_at, updated_at
+      RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, template_id, created_at, updated_at
     `,
       paramsFull
     );
@@ -85,7 +90,7 @@ export default defineEventHandler(async (event) => {
       paramsBasic
     );
     const r = rows[0] as any;
-    return { ...r, department_id: null, job_title_id: null };
+    return { ...r, department_id: null, job_title_id: null, template_id: null };
   }
 });
 

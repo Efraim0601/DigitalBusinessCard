@@ -14,4 +14,6 @@ export interface Card {
   /** Libellés FR/EN quand la carte est liée à un titre ou département géré (API) */
   department?: { label_fr: string; label_en: string };
   job_title?: { label_fr: string; label_en: string };
+  /** Template (background) choisi par l'employé s'il y est autorisé. */
+  template_id?: string | null;
 }

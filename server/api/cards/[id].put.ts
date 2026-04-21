@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
       UPDATE cards
       SET ${fields.join(", ")}, updated_at = now()
       WHERE id = $${whereIdx}
-      RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, created_at, updated_at
+      RETURNING id, email, first_name, last_name, company, title, phone, fax, mobile, department_id, job_title_id, template_id, created_at, updated_at
     `,
       values
     );
@@ -88,7 +88,7 @@ export default defineEventHandler(async (event) => {
       return { error: "Card not found" };
     }
     const r = rows[0] as any;
-    return { ...r, department_id: null, job_title_id: null };
+    return { ...r, department_id: null, job_title_id: null, template_id: null };
   }
 });
 
