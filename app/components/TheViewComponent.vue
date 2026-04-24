@@ -21,12 +21,17 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard, isCreator = false, background } = defineProps<{
+const { urlCard, isCreator = false, background, contentClass } = defineProps<{
   urlCard: Card;
   isCreator?: boolean;
   /** Image de fond explicite (override app.config.company.cardBackground). */
   background?: string;
+  /** Classe Tailwind de padding appliquée au contenu interne (dépend du template). */
+  contentClass?: string;
 }>();
+
+const DEFAULT_CONTENT_CLASS = "px-8 pt-[113px] pb-5";
+const resolvedContentClass = computed(() => contentClass || DEFAULT_CONTENT_CLASS);
 
 const { t, locale } = useAppLocale();
 const displayedTitle = computed(() => {
@@ -376,7 +381,7 @@ defineExpose({
             backgroundPosition: 'center',
           }"
         >
-          <div class="h-full flex flex-col px-8 pt-[113px] pb-5 relative z-[1]">
+          <div class="h-full flex flex-col relative z-[1]" :class="resolvedContentClass">
           <!-- Nom & titre -->
           <div class="mb-2">
             <h1 v-if="urlCard.fName || urlCard.lName" class="text-[20px] font-bold text-[#1a1a2e] leading-tight font-[Arial,Helvetica,sans-serif]">

@@ -4,6 +4,8 @@ export interface CardTemplate {
   id: TemplateId;
   background: string;
   labelKey: string;
+  /** Classe Tailwind appliquée au conteneur interne (padding) pour éviter les zones décoratives du fond. */
+  contentClass: string;
 }
 
 export const CARD_TEMPLATES: CardTemplate[] = [
@@ -11,11 +13,13 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     id: "classic",
     background: "/carte-digitale-bg.png",
     labelKey: "template.classic",
+    contentClass: "px-8 pt-[113px] pb-5",
   },
   {
     id: "modern",
     background: "/background_new.jpg",
     labelKey: "template.modern",
+    contentClass: "pl-[110px] pr-6 pt-[95px] pb-5",
   },
 ];
 
