@@ -1,11 +1,18 @@
 export type TemplateId = "classic" | "modern";
 
+export interface CardPadding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export interface CardTemplate {
   id: TemplateId;
   background: string;
   labelKey: string;
-  /** Classe Tailwind appliquée au conteneur interne (padding) pour éviter les zones décoratives du fond. */
-  contentClass: string;
+  /** Padding interne en pixels (référentiel 600×340) pour éviter les zones décoratives du fond. */
+  contentPadding: CardPadding;
   /** Valeur CSS `background-size`. Défaut `cover` peut rogner les bordures si ratio différent du 600×340. */
   backgroundSize: "cover" | "contain" | "100% 100%";
 }
@@ -15,14 +22,14 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     id: "classic",
     background: "/carte-digitale-bg.png",
     labelKey: "template.classic",
-    contentClass: "px-8 pt-[113px] pb-5",
+    contentPadding: { top: 113, right: 32, bottom: 20, left: 32 },
     backgroundSize: "cover",
   },
   {
     id: "modern",
     background: "/background_new.jpg",
     labelKey: "template.modern",
-    contentClass: "pl-[110px] pr-6 pt-[95px] pb-5",
+    contentPadding: { top: 95, right: 24, bottom: 45, left: 110 },
     backgroundSize: "100% 100%",
   },
 ];

@@ -21,19 +21,27 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard, isCreator = false, background, contentClass, backgroundSize } = defineProps<{
+type CardPaddingProp = { top: number; right: number; bottom: number; left: number };
+
+const { urlCard, isCreator = false, background, contentPadding, backgroundSize } = defineProps<{
   urlCard: Card;
   isCreator?: boolean;
   /** Image de fond explicite (override app.config.company.cardBackground). */
   background?: string;
-  /** Classe Tailwind de padding appliquée au contenu interne (dépend du template). */
-  contentClass?: string;
+  /** Padding interne en pixels (dépend du template). */
+  contentPadding?: CardPaddingProp;
   /** Valeur CSS `background-size` (cover / contain / 100% 100%). */
   backgroundSize?: string;
 }>();
 
-const DEFAULT_CONTENT_CLASS = "px-8 pt-[113px] pb-5";
-const resolvedContentClass = computed(() => contentClass || DEFAULT_CONTENT_CLASS);
+const DEFAULT_PADDING: CardPaddingProp = { top: 113, right: 32, bottom: 20, left: 32 };
+const resolvedPadding = computed<CardPaddingProp>(() => contentPadding ?? DEFAULT_PADDING);
+const contentPaddingStyle = computed(() => ({
+  paddingTop: `${resolvedPadding.value.top}px`,
+  paddingRight: `${resolvedPadding.value.right}px`,
+  paddingBottom: `${resolvedPadding.value.bottom}px`,
+  paddingLeft: `${resolvedPadding.value.left}px`,
+}));
 const resolvedBackgroundSize = computed(() => backgroundSize || "cover");
 
 const { t, locale } = useAppLocale();
@@ -384,7 +392,7 @@ defineExpose({
             backgroundPosition: 'center',
           }"
         >
-          <div class="h-full flex flex-col relative z-[1]" :class="resolvedContentClass">
+          <div class="h-full flex flex-col relative z-[1]" :style="contentPaddingStyle">
           <!-- Nom & titre -->
           <div class="mb-2">
             <h1 v-if="urlCard.fName || urlCard.lName" class="text-[20px] font-bold text-[#1a1a2e] leading-tight font-[Arial,Helvetica,sans-serif]">

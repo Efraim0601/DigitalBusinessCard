@@ -139,7 +139,7 @@ const TheViewComponent = defineAsyncComponent(() => import("~/components/TheView
           :url-card="card"
           :is-creator="false"
           :background="currentTemplate.background"
-          :content-class="currentTemplate.contentClass"
+          :content-padding="currentTemplate.contentPadding"
           :background-size="currentTemplate.backgroundSize"
         />
         <div v-if="canChooseTemplate" class="mt-4 w-full max-w-md flex flex-col items-center gap-3">
