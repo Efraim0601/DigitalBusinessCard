@@ -21,17 +21,20 @@ const updateScale = () => {
   cardScale.value = Math.min(1, availableWidth / CARD_WIDTH);
 };
 
-const { urlCard, isCreator = false, background, contentClass } = defineProps<{
+const { urlCard, isCreator = false, background, contentClass, backgroundSize } = defineProps<{
   urlCard: Card;
   isCreator?: boolean;
   /** Image de fond explicite (override app.config.company.cardBackground). */
   background?: string;
   /** Classe Tailwind de padding appliquée au contenu interne (dépend du template). */
   contentClass?: string;
+  /** Valeur CSS `background-size` (cover / contain / 100% 100%). */
+  backgroundSize?: string;
 }>();
 
 const DEFAULT_CONTENT_CLASS = "px-8 pt-[113px] pb-5";
 const resolvedContentClass = computed(() => contentClass || DEFAULT_CONTENT_CLASS);
+const resolvedBackgroundSize = computed(() => backgroundSize || "cover");
 
 const { t, locale } = useAppLocale();
 const displayedTitle = computed(() => {
@@ -377,7 +380,7 @@ defineExpose({
           :style="{
             backgroundColor: '#ffffff',
             backgroundImage: resolvedBackground ? `url(${resolvedBackground})` : undefined,
-            backgroundSize: 'cover',
+            backgroundSize: resolvedBackgroundSize,
             backgroundPosition: 'center',
           }"
         >

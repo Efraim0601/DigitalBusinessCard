@@ -6,6 +6,8 @@ export interface CardTemplate {
   labelKey: string;
   /** Classe Tailwind appliquée au conteneur interne (padding) pour éviter les zones décoratives du fond. */
   contentClass: string;
+  /** Valeur CSS `background-size`. Défaut `cover` peut rogner les bordures si ratio différent du 600×340. */
+  backgroundSize: "cover" | "contain" | "100% 100%";
 }
 
 export const CARD_TEMPLATES: CardTemplate[] = [
@@ -14,12 +16,14 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     background: "/carte-digitale-bg.png",
     labelKey: "template.classic",
     contentClass: "px-8 pt-[113px] pb-5",
+    backgroundSize: "cover",
   },
   {
     id: "modern",
     background: "/background_new.jpg",
     labelKey: "template.modern",
     contentClass: "pl-[110px] pr-6 pt-[95px] pb-5",
+    backgroundSize: "100% 100%",
   },
 ];
 

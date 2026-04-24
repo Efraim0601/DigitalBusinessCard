@@ -140,6 +140,7 @@ const TheViewComponent = defineAsyncComponent(() => import("~/components/TheView
           :is-creator="false"
           :background="currentTemplate.background"
           :content-class="currentTemplate.contentClass"
+          :background-size="currentTemplate.backgroundSize"
         />
         <div v-if="canChooseTemplate" class="mt-4 w-full max-w-md flex flex-col items-center gap-3">
           <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
