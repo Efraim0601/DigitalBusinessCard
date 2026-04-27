@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, defineAsyncComponent, ref, watchEffect } from "vue";
 import type { Card } from "~~/types/card";
 import { CARD_TEMPLATES, getTemplate, type TemplateId } from "~~/types/template";
 
@@ -64,11 +65,16 @@ const { data: card, pending: loading, error: fetchError } = await useAsyncData(
 
 const { data: settings } = await useAsyncData(
   "app-settings",
-  () =>
-    $fetch<{ allowUserTemplate: boolean; defaultTemplate: TemplateId }>("/api/settings").catch(
+  async () => {
+    if (!email.value) return { allowUserTemplate: false, defaultTemplate: "classic" as TemplateId };
+    return $fetch<{ allowUserTemplate: boolean; defaultTemplate: TemplateId }>("/api/settings").catch(
       () => ({ allowUserTemplate: false, defaultTemplate: "classic" as TemplateId })
-    ),
-  { default: () => ({ allowUserTemplate: false, defaultTemplate: "classic" as TemplateId }) }
+    );
+  },
+  {
+    watch: [email],
+    default: () => ({ allowUserTemplate: false, defaultTemplate: "classic" as TemplateId }),
+  }
 );
 
 const selectedTemplateId = ref<TemplateId>("classic");

@@ -105,7 +105,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "admin.importCsv": "Importer CSV / Excel",
     "admin.exportCsvSuccess": "Fichier CSV téléchargé.",
     "admin.dataTransferHintCards":
-      "Colonnes attendues : N°, email, first_name, last_name, mobile, poste, Direction. Fichiers : .csv ou .xlsx (première feuille). Les cartes existantes sont mises à jour par email (pas de doublon).",
+      "Colonnes attendues : N°, email (obligatoire), first_name, last_name, mobile, poste, poste_fr, poste_en, Direction, direction_fr, direction_en. Fichiers : .csv ou .xlsx (première feuille). Les cartes sont mises à jour par email. Si poste_fr ET poste_en (ou direction_fr ET direction_en) sont renseignés, le titre/la direction est créé(e) ou mis(e) à jour automatiquement — pas besoin d'imports séparés.",
     "admin.dataTransferHintDepartments":
       "Colonnes : label_fr, label_en (obligatoires). Fichiers : .csv ou .xlsx. Les lignes existantes sont fusionnées par libellé (FR ou EN).",
     "admin.dataTransferHintJobTitles":
@@ -258,7 +258,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "admin.importCsv": "Import CSV / Excel",
     "admin.exportCsvSuccess": "CSV file downloaded.",
     "admin.dataTransferHintCards":
-      "Expected columns: N°, email, first_name, last_name, mobile, poste, Direction. Files: .csv or .xlsx (first sheet). Existing cards are updated by email (no duplicates).",
+      "Expected columns: N°, email (required), first_name, last_name, mobile, poste, poste_fr, poste_en, Direction, direction_fr, direction_en. Files: .csv or .xlsx (first sheet). Cards are matched by email. When poste_fr AND poste_en (or direction_fr AND direction_en) are provided, the title/department is created or updated automatically — no separate imports needed.",
     "admin.dataTransferHintDepartments":
       "Columns: label_fr, label_en (required). Files: .csv or .xlsx. Existing rows are merged by label (FR or EN).",
     "admin.dataTransferHintJobTitles":

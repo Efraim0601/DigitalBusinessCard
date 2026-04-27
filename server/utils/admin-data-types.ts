@@ -17,14 +17,24 @@ export type AdminDataCard = {
   job_title_id?: string | null;
 };
 
-/** Ligne fichier cartes (poste / direction = libellés à résoudre). */
+/** Ligne fichier cartes (poste / direction = libellés à résoudre).
+ *
+ * Trois manières (par ordre de priorité) de lier une direction ou un poste :
+ *   1. `*Fr` + `*En` : upsert dans la table correspondante (creation/maj automatique).
+ *   2. `*Fr` ou `*En` seul : recherche existante par libellé FR ou EN.
+ *   3. `*Label` (ancien) : recherche existante par libellé FR ou EN (rétrocompatibilité).
+ */
 export type AdminSimplifiedCardInput = {
   email: string;
   first_name: string | null;
   last_name: string | null;
   mobile: string | null;
   posteLabel: string;
+  posteFr?: string | null;
+  posteEn?: string | null;
   directionLabel: string;
+  directionFr?: string | null;
+  directionEn?: string | null;
 };
 
 export type AdminLabelPairInput = { label_fr: string; label_en: string };

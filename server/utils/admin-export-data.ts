@@ -8,7 +8,8 @@ export type AdminExportRows = {
   cards: AdminDataCard[];
 };
 
-/** Lignes export « cartes » : uniquement les colonnes métier (cf. modèle RH). */
+/** Lignes export « cartes » : colonnes métier (modèle RH) + traductions FR/EN
+ *  pour permettre un import unifié (cartes + directions + postes en un seul fichier). */
 export type CardSimplifiedExportRow = {
   "N°": number;
   email: string;
@@ -16,7 +17,11 @@ export type CardSimplifiedExportRow = {
   last_name: string;
   mobile: string;
   poste: string;
+  poste_fr: string;
+  poste_en: string;
   Direction: string;
+  direction_fr: string;
+  direction_en: string;
 };
 
 export type DepartmentExportRow = { label_fr: string; label_en: string };
@@ -89,11 +94,14 @@ export async function loadCardsSimplifiedExportRows(): Promise<CardSimplifiedExp
       mobile: string | null;
       title: string | null;
       jf: string | null;
+      je: string | null;
       df: string | null;
+      de: string | null;
     }>(
       `
       SELECT c.email, c.first_name, c.last_name, c.mobile, c.title,
-             j.label_fr AS jf, d.label_fr AS df
+             j.label_fr AS jf, j.label_en AS je,
+             d.label_fr AS df, d.label_en AS de
       FROM cards c
       LEFT JOIN job_titles j ON c.job_title_id = j.id
       LEFT JOIN departments d ON c.department_id = d.id
@@ -107,7 +115,11 @@ export async function loadCardsSimplifiedExportRows(): Promise<CardSimplifiedExp
       last_name: r.last_name ?? "",
       mobile: r.mobile ?? "",
       poste: (r.jf && r.jf.trim()) || (r.title ?? "") || "",
+      poste_fr: (r.jf ?? "").trim(),
+      poste_en: (r.je ?? "").trim(),
       Direction: (r.df && r.df.trim()) || "",
+      direction_fr: (r.df ?? "").trim(),
+      direction_en: (r.de ?? "").trim(),
     }));
   } catch {
     const { rows } = await query<{
@@ -126,7 +138,11 @@ export async function loadCardsSimplifiedExportRows(): Promise<CardSimplifiedExp
       last_name: r.last_name ?? "",
       mobile: r.mobile ?? "",
       poste: r.title ?? "",
+      poste_fr: "",
+      poste_en: "",
       Direction: "",
+      direction_fr: "",
+      direction_en: "",
     }));
   }
 }

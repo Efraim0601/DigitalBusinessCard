@@ -159,7 +159,11 @@ describe("admin-export-data", () => {
           last_name: "D",
           mobile: "6 12",
           poste: "Analyste",
+          poste_fr: "Analyste",
+          poste_en: "",
           Direction: "Finance",
+          direction_fr: "Finance",
+          direction_en: "",
         },
       ]);
     });
@@ -218,7 +222,11 @@ describe("admin-export-data", () => {
           last_name: "",
           mobile: "",
           poste: "Titre seul",
+          poste_fr: "",
+          poste_en: "",
           Direction: "",
+          direction_fr: "",
+          direction_en: "",
         },
       ]);
       expect(queryMock).toHaveBeenCalledTimes(2);

@@ -35,6 +35,7 @@ describe("server/utils/card-mapper", () => {
       mobile: "690 000 000",
       department_id: "dep-1",
       job_title_id: "job-1",
+      template_id: null,
       department: { label_fr: "Direction des Risques", label_en: "Risk Directorate" },
       job_title: { label_fr: "Ingénieur d'étude", label_en: "Study Engineer" },
       created_at: "2026-01-01T00:00:00.000Z",

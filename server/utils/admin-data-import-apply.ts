@@ -42,7 +42,7 @@ async function resolveJobTitleId(client: PoolClient, label: string): Promise<str
   return rows[0]?.id ?? null;
 }
 
-async function upsertDepartmentPair(client: PoolClient, fr: string, en: string) {
+async function upsertDepartmentPair(client: PoolClient, fr: string, en: string): Promise<string> {
   const a = sanitizeCell(fr, MAX_LABEL_LENGTH);
   const b = sanitizeCell(en, MAX_LABEL_LENGTH);
   if (!a || !b) {
@@ -61,7 +61,7 @@ async function upsertDepartmentPair(client: PoolClient, fr: string, en: string) 
       a,
       b,
     ]);
-    return;
+    return byFr.rows[0].id;
   }
   const byEn = await client.query<{ id: string }>(
     `SELECT id FROM departments WHERE lower(trim(label_en)) = lower(trim($1)) LIMIT 1`,
@@ -73,16 +73,18 @@ async function upsertDepartmentPair(client: PoolClient, fr: string, en: string) 
       a,
       b,
     ]);
-    return;
+    return byEn.rows[0].id;
   }
+  const id = randomUUID();
   await client.query(`INSERT INTO departments (id, label_fr, label_en) VALUES ($1::uuid, $2, $3)`, [
-    randomUUID(),
+    id,
     a,
     b,
   ]);
+  return id;
 }
 
-async function upsertJobTitlePair(client: PoolClient, fr: string, en: string) {
+async function upsertJobTitlePair(client: PoolClient, fr: string, en: string): Promise<string> {
   const a = sanitizeCell(fr, MAX_LABEL_LENGTH);
   const b = sanitizeCell(en, MAX_LABEL_LENGTH);
   if (!a || !b) {
@@ -101,7 +103,7 @@ async function upsertJobTitlePair(client: PoolClient, fr: string, en: string) {
       a,
       b,
     ]);
-    return;
+    return byFr.rows[0].id;
   }
   const byEn = await client.query<{ id: string }>(
     `SELECT id FROM job_titles WHERE lower(trim(label_en)) = lower(trim($1)) LIMIT 1`,
@@ -113,13 +115,15 @@ async function upsertJobTitlePair(client: PoolClient, fr: string, en: string) {
       a,
       b,
     ]);
-    return;
+    return byEn.rows[0].id;
   }
+  const id = randomUUID();
   await client.query(`INSERT INTO job_titles (id, label_fr, label_en) VALUES ($1::uuid, $2, $3)`, [
-    randomUUID(),
+    id,
     a,
     b,
   ]);
+  return id;
 }
 
 async function applyScopedTx(
@@ -184,10 +188,24 @@ async function applyScopedTx(
     const last_name = sanitizeCell(c.last_name ?? "", MAX_NAME_LENGTH) || null;
     const mobile = formatGroupedNumber(sanitizeCell(c.mobile ?? "", 40)) || null;
     const posteLabel = sanitizeCell(c.posteLabel, MAX_LABEL_LENGTH);
+    const posteFr = sanitizeCell(c.posteFr ?? "", MAX_LABEL_LENGTH);
+    const posteEn = sanitizeCell(c.posteEn ?? "", MAX_LABEL_LENGTH);
     const directionLabel = sanitizeCell(c.directionLabel, MAX_LABEL_LENGTH);
+    const directionFr = sanitizeCell(c.directionFr ?? "", MAX_LABEL_LENGTH);
+    const directionEn = sanitizeCell(c.directionEn ?? "", MAX_LABEL_LENGTH);
 
     let department_id: string | null = null;
-    if (directionLabel) {
+    if (directionFr && directionEn) {
+      department_id = await upsertDepartmentPair(client, directionFr, directionEn);
+    } else if (directionFr || directionEn) {
+      const single = directionFr || directionEn;
+      department_id = await resolveDepartmentId(client, single);
+      if (!department_id) {
+        pushWarn(
+          `Direction non reconnue pour ${email} : « ${single} » (renseignez direction_fr et direction_en pour la créer automatiquement).`
+        );
+      }
+    } else if (directionLabel) {
       department_id = await resolveDepartmentId(client, directionLabel);
       if (!department_id) {
         pushWarn(`Direction non reconnue pour ${email} : « ${directionLabel} » (ignorée).`);
@@ -195,14 +213,24 @@ async function applyScopedTx(
     }
 
     let job_title_id: string | null = null;
-    if (posteLabel) {
+    if (posteFr && posteEn) {
+      job_title_id = await upsertJobTitlePair(client, posteFr, posteEn);
+    } else if (posteFr || posteEn) {
+      const single = posteFr || posteEn;
+      job_title_id = await resolveJobTitleId(client, single);
+      if (!job_title_id) {
+        pushWarn(
+          `Poste non reconnu pour ${email} : « ${single} » (renseignez poste_fr et poste_en pour le créer automatiquement).`
+        );
+      }
+    } else if (posteLabel) {
       job_title_id = await resolveJobTitleId(client, posteLabel);
       if (!job_title_id) {
         pushWarn(`Poste non reconnu pour ${email} : « ${posteLabel} » (ignoré comme lien titre).`);
       }
     }
 
-    const title = posteLabel || null;
+    const title = posteLabel || posteFr || posteEn || null;
     const phone = FIXED_PHONE;
     const fax = FIXED_FAX;
     const cardId = randomUUID();

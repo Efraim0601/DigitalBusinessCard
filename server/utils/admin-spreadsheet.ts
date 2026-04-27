@@ -3,8 +3,24 @@ import * as XLSX from "xlsx/dist/xlsx.full.min.js";
 import type { AdminImportScope, AdminSimplifiedCardInput, ParsedScopedImport } from "./admin-data-types";
 import type { CardSimplifiedExportRow, DepartmentExportRow, JobTitleExportRow } from "./admin-export-data";
 
-/** En-têtes export cartes (alignés maquette RH). */
-export const CARD_CSV_HEADERS = ["N°", "email", "first_name", "last_name", "mobile", "poste", "Direction"] as const;
+/** En-têtes export cartes (alignés maquette RH).
+ *
+ * Colonnes FR/EN ajoutées : permettent d'importer dans un seul fichier les cartes
+ * et leurs directions/postes (avec traductions), sans passer par les onglets dédiés.
+ */
+export const CARD_CSV_HEADERS = [
+  "N°",
+  "email",
+  "first_name",
+  "last_name",
+  "mobile",
+  "poste",
+  "poste_fr",
+  "poste_en",
+  "Direction",
+  "direction_fr",
+  "direction_en",
+] as const;
 
 export const DEPARTMENT_CSV_HEADERS = ["label_fr", "label_en"] as const;
 export const JOB_TITLE_CSV_HEADERS = ["label_fr", "label_en"] as const;
@@ -69,7 +85,11 @@ export function buildCardsSimplifiedCsvBuffer(rows: CardSimplifiedExportRow[]): 
     last_name: r.last_name,
     mobile: r.mobile,
     poste: r.poste,
+    poste_fr: r.poste_fr,
+    poste_en: r.poste_en,
     Direction: r.Direction,
+    direction_fr: r.direction_fr,
+    direction_en: r.direction_en,
   }));
   return Buffer.from(rowsToCsv(plain, CARD_CSV_HEADERS), "utf8");
 }
@@ -87,6 +107,10 @@ function rowToSimplifiedCard(r: Record<string, string>): AdminSimplifiedCardInpu
   if (!email) return null;
   const posteLabel =
     r.poste || r.title || r.titre || r.job_title || r.jobtitle || r.fonction || "";
+  const posteFr =
+    r.poste_fr || r.titre_fr || r.title_fr || r.job_title_fr || r.fonction_fr || "";
+  const posteEn =
+    r.poste_en || r.titre_en || r.title_en || r.job_title_en || r.fonction_en || "";
   const directionLabel =
     r.direction ||
     r.departement ||
@@ -94,13 +118,21 @@ function rowToSimplifiedCard(r: Record<string, string>): AdminSimplifiedCardInpu
     r.department ||
     r.direction_label ||
     "";
+  const directionFr =
+    r.direction_fr || r.departement_fr || r.département_fr || r.department_fr || "";
+  const directionEn =
+    r.direction_en || r.departement_en || r.département_en || r.department_en || "";
   return {
     email,
     first_name: r.first_name || r.prenom || null,
     last_name: r.last_name || r.nom || null,
     mobile: r.mobile || r.portable || r.téléphone_mobile || null,
     posteLabel: posteLabel.trim(),
+    posteFr: posteFr.trim() || null,
+    posteEn: posteEn.trim() || null,
     directionLabel: directionLabel.trim(),
+    directionFr: directionFr.trim() || null,
+    directionEn: directionEn.trim() || null,
   };
 }
 

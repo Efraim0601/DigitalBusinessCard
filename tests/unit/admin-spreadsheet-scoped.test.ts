@@ -10,7 +10,7 @@ import {
 describe("admin-spreadsheet (import/export par scope)", () => {
   it("parseScopedImportBuffer lit le CSV cartes et mappe les colonnes", () => {
     const csv = Buffer.from(
-      `${CARD_CSV_HEADERS.join(";")}\n1;u@example.com;Jane;Doe;6 12 34 56;Chef;IT`,
+      `${CARD_CSV_HEADERS.join(";")}\n1;u@example.com;Jane;Doe;6 12 34 56;Chef;;;IT;;`,
       "utf8"
     );
     const parsed = parseScopedImportBuffer(csv, "test.csv", "cards");
@@ -22,6 +22,22 @@ describe("admin-spreadsheet (import/export par scope)", () => {
       last_name: "Doe",
       posteLabel: "Chef",
       directionLabel: "IT",
+    });
+  });
+
+  it("parseScopedImportBuffer lit les colonnes FR/EN pour direction et poste", () => {
+    const csv = Buffer.from(
+      `${CARD_CSV_HEADERS.join(";")}\n1;u@example.com;Jane;Doe;;Chef;Chef de service;Service Manager;IT;Direction Informatique;IT Department`,
+      "utf8"
+    );
+    const parsed = parseScopedImportBuffer(csv, "test.csv", "cards");
+    expect(parsed.scope).toBe("cards");
+    expect(parsed.cards[0]).toMatchObject({
+      email: "u@example.com",
+      posteFr: "Chef de service",
+      posteEn: "Service Manager",
+      directionFr: "Direction Informatique",
+      directionEn: "IT Department",
     });
   });
 
@@ -45,7 +61,11 @@ describe("admin-spreadsheet (import/export par scope)", () => {
         last_name: "B",
         mobile: "111",
         poste: "P",
+        poste_fr: "",
+        poste_en: "",
         Direction: "D",
+        direction_fr: "",
+        direction_en: "",
       },
     ]);
     const text = buf.toString("utf8").replace(/^\uFEFF/, "");
