@@ -435,6 +435,12 @@ const SCOPED_DOWNLOAD: Record<AdminImportScope, string> = {
   job_titles: "titres-postes.csv",
 };
 
+const SCOPED_TEMPLATE_DOWNLOAD: Record<AdminImportScope, string> = {
+  cards: "modele-cartes.csv",
+  departments: "modele-directions.csv",
+  job_titles: "modele-titres-postes.csv",
+};
+
 async function exportScopedCsv(scope: AdminImportScope) {
   resetTransfers(scope);
   try {
@@ -458,6 +464,32 @@ async function exportScopedCsv(scope: AdminImportScope) {
     if (scope === "cards") cardsTransferError.value = t("admin.exportError");
     else if (scope === "departments") departmentsTransferError.value = t("admin.exportError");
     else jobTitlesTransferError.value = t("admin.exportError");
+  }
+}
+
+async function downloadScopedTemplate(scope: AdminImportScope) {
+  resetTransfers(scope);
+  try {
+    const buf = await $fetch<ArrayBuffer>("/api/admin/data-template", {
+      query: { scope },
+      responseType: "arrayBuffer",
+    });
+    if (typeof document === "undefined") return;
+    const blob = new Blob([buf], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = SCOPED_TEMPLATE_DOWNLOAD[scope];
+    a.click();
+    URL.revokeObjectURL(url);
+    if (scope === "cards") cardsTransferMessage.value = t("admin.templateDownloaded");
+    else if (scope === "departments") departmentsTransferMessage.value = t("admin.templateDownloaded");
+    else jobTitlesTransferMessage.value = t("admin.templateDownloaded");
+  } catch (e) {
+    console.error(e);
+    if (scope === "cards") cardsTransferError.value = t("admin.templateError");
+    else if (scope === "departments") departmentsTransferError.value = t("admin.templateError");
+    else jobTitlesTransferError.value = t("admin.templateError");
   }
 }
 
@@ -847,6 +879,9 @@ async function saveAppearanceSettings() {
           {{ t("admin.dataTransferHintCards") }}
         </p>
         <div class="flex flex-wrap items-center gap-2">
+          <UButton type="button" variant="outline" size="sm" icon="i-lucide-file-text" @click="downloadScopedTemplate('cards')">
+            {{ t("admin.downloadTemplate") }}
+          </UButton>
           <UButton type="button" variant="outline" size="sm" icon="i-lucide-download" @click="exportScopedCsv('cards')">
             {{ t("admin.exportCsv") }}
           </UButton>
@@ -1106,6 +1141,15 @@ async function saveAppearanceSettings() {
             type="button"
             variant="outline"
             size="sm"
+            icon="i-lucide-file-text"
+            @click="downloadScopedTemplate('departments')"
+          >
+            {{ t("admin.downloadTemplate") }}
+          </UButton>
+          <UButton
+            type="button"
+            variant="outline"
+            size="sm"
             icon="i-lucide-download"
             @click="exportScopedCsv('departments')"
           >
@@ -1260,6 +1304,15 @@ async function saveAppearanceSettings() {
           {{ t("admin.dataTransferHintJobTitles") }}
         </p>
         <div class="flex flex-wrap items-center gap-2">
+          <UButton
+            type="button"
+            variant="outline"
+            size="sm"
+            icon="i-lucide-file-text"
+            @click="downloadScopedTemplate('job_titles')"
+          >
+            {{ t("admin.downloadTemplate") }}
+          </UButton>
           <UButton
             type="button"
             variant="outline"
