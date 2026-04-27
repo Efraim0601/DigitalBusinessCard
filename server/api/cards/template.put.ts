@@ -1,5 +1,5 @@
 import { query } from "../../utils/db";
-import { getAppSettings } from "../../utils/app-settings";
+import { ensureTemplatesSchema, getAppSettings } from "../../utils/app-settings";
 import { isValidTemplateId } from "../../../types/template";
 
 export default defineEventHandler(async (event) => {
@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
     return { error: "user template selection is disabled" };
   }
 
+  await ensureTemplatesSchema();
   const { rows } = await query<{ id: string; template_id: string | null }>(
     `UPDATE cards
      SET template_id = $1, updated_at = now()
