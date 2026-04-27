@@ -29,7 +29,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     id: "modern",
     background: "/background_new.jpg",
     labelKey: "template.modern",
-    contentPadding: { top: 95, right: 24, bottom: 45, left: 110 },
+    contentPadding: { top: 100, right: 28, bottom: 45, left: 135 },
     backgroundSize: "100% 100%",
   },
 ];
